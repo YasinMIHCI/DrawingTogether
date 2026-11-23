@@ -33,7 +33,7 @@ Le code réseau sera isolé derrière une interface `Transport` pour pouvoir cha
 
 ### 2.2 Pile technique proposée ❓(Q8)
 - **Vite + TypeScript** (build), déployé automatiquement sur Pages via **GitHub Actions**.
-- **UI** : Svelte (léger, rapide) — ou JS sans framework si tu préfères.
+- **UI** : Svelte 5 (validé).
 - **Dessin** : Canvas 2D (+ WebGL plus tard si besoin de perfs pour les pinceaux texturés), **Pointer Events** (souris, doigt, stylet avec pression/inclinaison).
 - **Stockage local** : IndexedDB (sauvegarde des dessins, palettes, réglages).
 
@@ -62,9 +62,9 @@ Le **moteur de dessin est unique** : les deux interfaces (bureau / mobile) et to
 ### Phase 0 — Fondations
 - **T0.1** Projet Vite + TS + structure de dossiers, lint, tests unitaires (Vitest).
 - **T0.2** Déploiement GitHub Pages via GitHub Actions (à chaque push sur `main`).
-- **T0.3** Page d'accueil minimale (choix : Toile partagée / Jeux / Dessin libre) + choix pseudo/avatar ❓(Q5).
+- **T0.3** Page d'accueil minimale (choix : Toile partagée / Jeux / Dessin libre) + choix pseudo + avatar dans une liste (pas de compte).
 - **T0.4** Détection bureau/mobile + bascule manuelle ; gestion du viewport mobile (empêcher le zoom/scroll du navigateur sur la toile).
-- **T0.5** Système de traduction (FR d'abord) ❓(Q4).
+- **T0.5** Système de traduction **français + anglais** (langue du navigateur par défaut, sélecteur manuel).
 
 ### Phase 1 — Moteur de dessin (cœur)
 - **T1.1** Toile : taille du document, fond, zoom, déplacement, **rotation**, ajustement à l'écran.
@@ -124,7 +124,7 @@ L'utilisateur bascule entre « Style Krita » et « Style Paint » dans les rég
 ### Phase 6 — Jeux de téléphone dessiné
 - **T6.1** Moteur de partie générique : « chaînes » qui tournent entre joueurs, étapes (écrire / dessiner / regarder), minuteur, attribution sans répétition, gestion des absents.
 - **T6.2** Écran de configuration avec deux onglets : **Préréglages** (les modes) et **Personnalisations** ❓(Q2).
-- **T6.3** Écrans d'étape : saisie de phrase, dessin (moteur de dessin simplifié ou complet ❓Q13), attente des autres.
+- **T6.3** Écrans d'étape : saisie de phrase, dessin, attente des autres. **Dessin : éditeur simplifié par défaut** (quelques pinceaux, gomme, remplissage, couleurs, annuler) **+ bouton pour passer à l'éditeur complet**.
 - **T6.4** **Album de fin** : révélation chaîne par chaîne, réactions, téléchargement (image/GIF).
 - **T6.5** Un sous-tâche par mode (voir tableau ci-dessous).
 
