@@ -7,6 +7,8 @@ export interface RenderOptions {
   workspace: string;
   /** Contour du pinceau sous le pointeur (coordonnées écran), ou null. */
   cursor: { at: Point; diameter: number } | null;
+  /** Dessins par-dessus la toile (sélection, poignées…), appelé avec l'échelle dpr. */
+  overlay?: (ctx: CanvasRenderingContext2D) => void;
 }
 
 let checker: CanvasPattern | null = null;
@@ -71,6 +73,13 @@ export function render(
   }
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'source-over';
+
+  if (opts.overlay) {
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    opts.overlay(ctx);
+    ctx.restore();
+  }
 
   if (opts.cursor && opts.cursor.diameter >= 4) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);

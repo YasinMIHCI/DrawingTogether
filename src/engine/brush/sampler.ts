@@ -5,8 +5,10 @@ export interface InputPoint {
   y: number;
   /** 0 à 1 */
   pressure: number;
-  /** Touche Maj enfoncée (contraintes des formes). */
+  /** Touche Maj enfoncée (contraintes des formes, ajout à la sélection). */
   shift?: boolean;
+  /** Touche Alt enfoncée (retrait de la sélection). */
+  alt?: boolean;
 }
 
 /** Un tampon à poser : centre, diamètre, densité, direction du trait, distance depuis le début. */

@@ -80,10 +80,10 @@ Le **moteur de dessin est unique** : les deux interfaces (bureau / mobile) et to
   - *Décoration* : étoiles, cœurs, étincelles, fleurs, bulles, feuilles · *Gomme* : dure, douce, texturée.
   - Réglages par pinceau + « réinitialiser les options ». Pinceaux personnalisés (« + ») en phase ultérieure.
 - ✅ **T1.6** Outils : gomme, remplissage (pot de peinture, tolérance), pipette, formes (ligne, rectangle, ellipse, polygone), texte.
-- **T1.7** Sélection (rectangle, lasso, baguette magique) + déplacer/transformer (redimensionner, pivoter, retourner).
-- **T1.8** Filtres : luminosité/contraste, teinte/saturation, flou, inverser, niveaux de gris. *(Liquéfier et « Effet » plus tard : T1.10)*
-- **T1.9** Import d'image, export PNG/JPG, sauvegarde locale du projet.
-- **T1.10** Avancé : liquéfier, effets, pinceaux personnalisés.
+- ✅ **T1.7** Sélection (rectangle, lasso, baguette magique) + déplacer/transformer (redimensionner, pivoter, retourner).
+- ✅ **T1.8** Filtres : luminosité/contraste, teinte/saturation, flou, inverser, niveaux de gris. *(Liquéfier et « Effet » plus tard : T1.10)*
+- ✅ **T1.9** Nouveau dessin (choix de la taille), import d'image (bouton, glisser-déposer, coller), export PNG/JPG, sauvegarde automatique dans le navigateur, fichier projet `.dtproj` avec calques.
+- ✅ **T1.10** Avancé : liquéfier, effets (sépia, postériser, mosaïque, bruit, netteté), pinceaux personnalisés (« Mes pinceaux »).
 
 ### Phase 2 — Interface ordinateur : **deux interfaces au choix, Krita par défaut**
 L'utilisateur bascule entre « Style Krita » et « Style Paint » dans les réglages (choix mémorisé).

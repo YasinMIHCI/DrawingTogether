@@ -7,6 +7,7 @@ import { StrokeSampler, type Dab, type InputPoint } from './sampler';
 import type { BrushSettings } from './settings';
 import { drawTip, getTip, getTipMask, TIP_VARIANTS } from './tips';
 import { grainCanvas } from './grain';
+import { clipToSelection, TempSurface } from '../selection';
 
 /** Une empreinte concrète d'un tampon (particule, dispersion…), relative au tampon. */
 interface Mark {
@@ -16,18 +17,6 @@ interface Mark {
   alpha: number;
   angle: number;
   variant: number;
-}
-
-/** Surface temporaire réutilisable, agrandie à la demande. */
-class TempSurface {
-  private s: Surface | null = null;
-  get(w: number, h: number): Surface {
-    if (!this.s || this.s.canvas.width < w || this.s.canvas.height < h) {
-      this.s = createSurface(Math.max(w, this.s?.canvas.width ?? 0), Math.max(h, this.s?.canvas.height ?? 0));
-    }
-    this.s.ctx.clearRect(0, 0, w, h);
-    return this.s;
-  }
 }
 
 const DEG = Math.PI / 180;
@@ -56,6 +45,8 @@ export class StrokeRenderer {
   private carrier: Surface | null = null;
   private maskTmp = new TempSurface();
   private smallTmp = new TempSurface();
+  private clipTmp = new TempSurface();
+  private selection: HTMLCanvasElement | null = null;
 
   constructor(private readonly width: number, private readonly height: number) {
     this.buffer = createSurface(width, height);
@@ -70,9 +61,20 @@ export class StrokeRenderer {
     return this.s?.mode === 'smudge' || this.s?.mode === 'blur';
   }
 
-  /** `simulatePressure` : souris ou doigt, le début et la fin du trait sont affinés artificiellement. */
-  begin(layer: Layer, settings: BrushSettings, color: string, p: InputPoint, simulatePressure = false): void {
+  /**
+   * `simulatePressure` : souris ou doigt, le début et la fin du trait sont affinés artificiellement.
+   * `selection` : canvas de sélection, le trait ne sort pas de la zone sélectionnée.
+   */
+  begin(
+    layer: Layer,
+    settings: BrushSettings,
+    color: string,
+    p: InputPoint,
+    simulatePressure = false,
+    selection: HTMLCanvasElement | null = null,
+  ): void {
     this.layer = layer;
+    this.selection = selection;
     this.s = { ...settings };
     this.color = color;
     this.simulate = simulatePressure;
@@ -130,6 +132,7 @@ export class StrokeRenderer {
     ctx.globalCompositeOperation = this.s.mode === 'erase' ? 'destination-out' : 'source-over';
     ctx.drawImage(src, sx, sy, r.w, r.h, r.x, r.y, r.w, r.h);
     ctx.restore();
+    if (this.selection) clipToSelection(ctx, this.snapshot.canvas, this.selection, r, this.clipTmp.get(r.w, r.h));
     return r;
   }
 
@@ -167,6 +170,7 @@ export class StrokeRenderer {
     this.dabs = [];
     this.marks = [];
     this.carrier = null;
+    this.selection = null;
   }
 
   private getGrainPattern(ctx: CanvasRenderingContext2D): CanvasPattern | null {
@@ -274,6 +278,10 @@ export class StrokeRenderer {
     ctx.drawImage(masked.canvas, 0, 0, S, S, rx, ry, S, S);
     ctx.restore();
     this.touch(d.x, d.y, d.size);
+    if (this.selection) {
+      const r = clampRect({ x: rx, y: ry, w: S, h: S }, this.width, this.height);
+      if (r) clipToSelection(ctx, this.snapshot.canvas, this.selection, r, this.clipTmp.get(r.w, r.h));
+    }
   }
 
   /** Mélange progressivement `ctx` (taille S) vers une image ou une couleur. */

@@ -79,6 +79,14 @@ export class DrawingDocument {
     return { layer, index };
   }
 
+  /** Remplace tous les calques (chargement d'un projet). */
+  replaceLayers(layers: Layer[], activeIndex: number): void {
+    if (!layers.length) return;
+    this.layers = layers;
+    this.activeId = layers[Math.max(0, Math.min(activeIndex, layers.length - 1))].id;
+    this.counter = Math.max(...layers.map((l) => l.number));
+  }
+
   move(id: number, toIndex: number): void {
     const from = this.indexOf(id);
     if (from < 0) return;

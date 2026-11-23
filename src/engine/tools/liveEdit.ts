@@ -2,6 +2,7 @@ import { createSurface, type Surface } from '../canvas';
 import { PixelPatch } from '../commands';
 import { clampRect, unionRect, type Rect } from '../geometry';
 import type { Layer } from '../layers';
+import { clipToSelection, TempSurface } from '../selection';
 
 /**
  * Modification réversible d'un calque avec aperçu en direct (formes) :
@@ -12,6 +13,7 @@ export class LiveEdit {
   private layer: Layer | null = null;
   private prev: Rect | null = null;
   private total: Rect | null = null;
+  private tmp = new TempSurface();
 
   constructor(private readonly width: number, private readonly height: number) {}
 
@@ -28,8 +30,8 @@ export class LiveEdit {
     this.total = null;
   }
 
-  /** Redessine : `rect` = zone que `draw` va toucher. */
-  update(rect: Rect | null, draw: (ctx: CanvasRenderingContext2D) => void): void {
+  /** Redessine : `rect` = zone que `draw` va toucher ; `clip` = sélection à respecter. */
+  update(rect: Rect | null, draw: (ctx: CanvasRenderingContext2D) => void, clip: HTMLCanvasElement | null = null): void {
     if (!this.layer) return;
     this.restore(this.prev);
     const r = rect && clampRect(rect, this.width, this.height);
@@ -38,9 +40,15 @@ export class LiveEdit {
       ctx.save();
       draw(ctx);
       ctx.restore();
+      if (clip) clipToSelection(ctx, this.snapshot!.canvas, clip, r, this.tmp.get(r.w, r.h));
     }
     this.prev = r;
     this.total = unionRect(this.total, r);
+  }
+
+  /** Copie du calque prise au début (pour les outils qui en ont besoin). */
+  get original(): HTMLCanvasElement | null {
+    return this.snapshot?.canvas ?? null;
   }
 
   commit(label: string): PixelPatch | null {

@@ -101,7 +101,7 @@ export function attachInput(el: HTMLElement, h: InputHandlers): () => void {
       return;
     }
     if (e.button !== 0) return;
-    if (h.strokeStart({ ...p, pressure: pressureOf(e), shift: e.shiftKey }, e.pointerType)) {
+    if (h.strokeStart({ ...p, pressure: pressureOf(e), shift: e.shiftKey, alt: e.altKey }, e.pointerType)) {
       mode = 'stroke';
       strokeId = e.pointerId;
       strokeType = e.pointerType;
@@ -121,7 +121,7 @@ export function attachInput(el: HTMLElement, h: InputHandlers): () => void {
     if (mode === 'stroke' && e.pointerId === strokeId) {
       const events = e.getCoalescedEvents?.() ?? [];
       const list = events.length ? events : [e];
-      h.strokeMove(list.map((ev) => ({ ...local(ev), pressure: pressureOf(ev), shift: e.shiftKey })));
+      h.strokeMove(list.map((ev) => ({ ...local(ev), pressure: pressureOf(ev), shift: e.shiftKey, alt: e.altKey })));
     } else if (mode === 'pan') {
       h.view.panBy(p.x - last.x, p.y - last.y);
       last = p;

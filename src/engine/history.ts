@@ -17,6 +17,8 @@ export interface HistoryOptions {
 export class History {
   private done: Command[] = [];
   private undone: Command[] = [];
+  /** Augmente à chaque changement (sert à la sauvegarde automatique). */
+  version = 0;
 
   constructor(private readonly options: HistoryOptions) {}
 
@@ -41,6 +43,7 @@ export class History {
 
   /** Enregistre une commande déjà exécutée. */
   push(cmd: Command): void {
+    this.version++;
     this.undone = [];
     const top = this.done[this.done.length - 1];
     if (top?.merge?.(cmd)) return;
@@ -53,6 +56,7 @@ export class History {
     if (!cmd) return false;
     cmd.undo();
     this.undone.push(cmd);
+    this.version++;
     return true;
   }
 
@@ -61,6 +65,7 @@ export class History {
     if (!cmd) return false;
     cmd.redo();
     this.done.push(cmd);
+    this.version++;
     return true;
   }
 

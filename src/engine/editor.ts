@@ -15,9 +15,15 @@ import { dilate, floodMask, maskBounds } from './tools/fill';
 import { LiveEdit } from './tools/liveEdit';
 import { constrain, drawShape, shapeBounds, type ShapeOptions } from './tools/shapes';
 import { drawText, measureText, type TextOptions } from './tools/text';
+import { combineMasks, polygonMask, rasterMask, Selection, SelectionChange, type SelectMode } from './selection';
+import { contentBounds, TransformController } from './tools/transformController';
+import { LiquifyStroke } from './tools/liquifyStroke';
+import type { LiquifyOptions } from './tools/liquify';
+import { applyFilter as runFilter, defaultParams, type FilterKind } from './tools/filters';
+import { loadProject, type ProjectData } from './project';
 
-export type ToolId = 'brush' | 'eraser' | 'fill' | 'eyedropper' | 'shape' | 'text';
-export type Notice = 'layerLocked' | 'layerHidden' | null;
+export type ToolId = 'brush' | 'eraser' | 'fill' | 'eyedropper' | 'shape' | 'text' | 'select' | 'transform' | 'liquify';
+export type Notice = 'layerLocked' | 'layerHidden' | 'transformEmpty' | null;
 
 export interface FillOptions {
   /** 0 à 255 */
@@ -27,6 +33,19 @@ export interface FillOptions {
   /** Agrandissement de la zone en pixels (passe sous les bords des traits). */
   expand: number;
   opacity: number;
+}
+
+export interface SelectOptions {
+  kind: 'rect' | 'ellipse' | 'lasso' | 'wand';
+  mode: SelectMode;
+  /** Baguette magique */
+  tolerance: number;
+  source: 'layer' | 'canvas';
+}
+
+export interface FilterSession {
+  kind: FilterKind;
+  params: Record<string, number>;
 }
 
 export interface EditorOptions {
@@ -55,6 +74,10 @@ export class Editor {
   text: TextOptions = { font: 'sans-serif', size: 64, bold: false, italic: false };
   /** Position (document) où l'utilisateur veut écrire : l'interface affiche une saisie. */
   textRequest: Point | null = null;
+  selectOpts: SelectOptions = { kind: 'rect', mode: 'replace', tolerance: 32, source: 'layer' };
+  liquifyOpts: LiquifyOptions = { mode: 'push', size: 80, strength: 0.6 };
+  readonly selection: Selection;
+  readonly transform: TransformController;
   notice: Notice = null;
 
   private stroke: StrokeRenderer;
@@ -63,6 +86,11 @@ export class Editor {
   private poly: Point[] = [];
   private polyFloat: Point | null = null;
   private lastPolyUp = 0;
+  private liquifyStroke: LiquifyStroke;
+  private selectDraft: { mode: SelectMode; points: Point[] } | null = null;
+  private filter: (FilterSession & { layer: Layer; rect: { x: number; y: number; w: number; h: number }; orig: ImageData; out: ImageData; pending: boolean }) | null = null;
+  private clipboard: { surface: Surface; x: number; y: number } | null = null;
+  private selPath: { src: number[]; path: Path2D } | null = null;
   private temp: Surface | null = null;
   private pixel: Surface | null = null;
   private canvas: HTMLCanvasElement | null = null;
@@ -81,6 +109,9 @@ export class Editor {
     this.history = new History({ maxBytes: opts.historyBytes ?? 256 * 2 ** 20, maxSteps: opts.historySteps ?? 200 });
     this.stroke = new StrokeRenderer(opts.width, opts.height);
     this.live = new LiveEdit(opts.width, opts.height);
+    this.selection = new Selection(opts.width, opts.height);
+    this.transform = new TransformController(opts.width, opts.height);
+    this.liquifyStroke = new LiquifyStroke(opts.width, opts.height);
   }
 
   /** Abonnement aux changements (calques, historique, vue, couleur). Renvoie la fonction de désabonnement. */
@@ -92,6 +123,18 @@ export class Editor {
   private changed(): void {
     this.requestRender();
     for (const fn of this.listeners) fn();
+  }
+
+  /** Prévient l'interface et redessine (après un changement fait de l'extérieur). */
+  notify(): void {
+    this.changed();
+  }
+
+  /** Change les options d'un outil. */
+  configure<K extends 'fill' | 'shape' | 'text' | 'selectOpts' | 'liquifyOpts'>(key: K, patch: Partial<Editor[K]>): void {
+    if (key === 'shape') this.finishPolygon(true);
+    Object.assign(this[key], patch);
+    this.changed();
   }
 
   // ---------- Affichage ----------
@@ -134,7 +177,13 @@ export class Editor {
       key: (e) => this.key(e),
     });
 
+    // Animation des « fourmis » autour de la sélection
+    const ants = setInterval(() => {
+      if (this.selection.active || this.selectDraft) this.requestRender();
+    }, 120);
+
     return () => {
+      clearInterval(ants);
       ro.disconnect();
       detachInput();
       cancelAnimationFrame(this.raf);
@@ -155,10 +204,11 @@ export class Editor {
   private renderNow(): void {
     if (!this.ctx) return;
     this.stroke.flush();
-    const b = this.activeBrush;
+    const size = this.activeBrush?.size ?? (this.tool === 'liquify' ? this.liquifyOpts.size : 0);
     render(this.ctx, this.viewW, this.viewH, this.dpr, this.doc, this.view, {
       workspace: this.workspace,
-      cursor: this.hoverAt && b ? { at: this.hoverAt, diameter: b.size * this.view.zoom } : null,
+      cursor: this.hoverAt && size ? { at: this.hoverAt, diameter: size * this.view.zoom } : null,
+      overlay: (ctx) => this.drawOverlay(ctx),
     });
   }
 
@@ -187,8 +237,10 @@ export class Editor {
   setTool(tool: ToolId): void {
     if (tool === this.tool) return;
     this.finishPolygon(true);
+    this.finishTransform(true);
     this.textRequest = null;
     this.tool = tool;
+    if (tool === 'transform') this.startTransform();
     this.changed();
   }
 
@@ -221,7 +273,7 @@ export class Editor {
       case 'eraser': {
         const layer = this.editableLayer();
         if (!layer) return false;
-        this.stroke.begin(layer, this.activeBrush!, this.color, p, pointerType !== 'pen');
+        this.stroke.begin(layer, this.activeBrush!, this.color, p, pointerType !== 'pen', this.selection.canvas);
         this.requestRender();
         return true;
       }
@@ -256,6 +308,28 @@ export class Editor {
         this.changed();
         return false;
       }
+      case 'select': {
+        const mode: SelectMode = screen.shift ? 'add' : screen.alt ? 'subtract' : this.selectOpts.mode;
+        if (this.selectOpts.kind === 'wand') {
+          this.magicWand(p, mode);
+          return false;
+        }
+        this.selectDraft = { mode, points: [p, p] };
+        this.requestRender();
+        return true;
+      }
+      case 'transform': {
+        if (!this.transform.active && !this.startTransform()) return false;
+        this.transform.pointerDown(p, screen, this.view);
+        return true;
+      }
+      case 'liquify': {
+        const layer = this.editableLayer();
+        if (!layer) return false;
+        this.liquifyStroke.begin(layer, this.liquifyOpts, p, this.selection.canvas);
+        this.requestRender();
+        return true;
+      }
     }
   }
 
@@ -278,6 +352,25 @@ export class Editor {
           this.drawShapePreview(this.toDocPoint(last), !!last.shift);
         }
         break;
+      case 'select':
+        if (this.selectDraft) {
+          const pts = this.selectDraft.points;
+          for (const q of points) {
+            const d = this.toDocPoint(q);
+            if (this.selectOpts.kind === 'lasso') pts.push(d);
+            else pts[1] = d;
+          }
+          this.requestRender();
+        }
+        break;
+      case 'transform':
+        this.transform.pointerMove(this.toDocPoint(last), !!last.shift);
+        this.requestRender();
+        break;
+      case 'liquify':
+        for (const q of points) this.liquifyStroke.move(this.toDocPoint(q));
+        this.requestRender();
+        break;
     }
   }
 
@@ -297,11 +390,23 @@ export class Editor {
           this.pushCommand(this.live.commit('shape'));
         }
         break;
+      case 'select':
+        this.finishSelectDraft();
+        break;
+      case 'transform':
+        this.transform.pointerUp();
+        break;
+      case 'liquify':
+        this.pushCommand(this.liquifyStroke.end());
+        break;
     }
   }
 
   private pointerCancel(): void {
     if (this.stroke.active) this.stroke.cancel();
+    if (this.liquifyStroke.active) this.liquifyStroke.cancel();
+    this.selectDraft = null;
+    this.transform.pointerUp();
     if (this.tool === 'shape' && this.shape.kind !== 'polygon') {
       this.shapeStart = null;
       this.live.cancel();
@@ -319,11 +424,23 @@ export class Editor {
   }
 
   private key(e: KeyboardEvent): boolean {
-    if (this.poly.length && (e.key === 'Enter' || e.key === 'Escape')) {
-      this.finishPolygon(e.key === 'Enter');
+    const mod = e.ctrlKey || e.metaKey;
+    const k = e.key.toLowerCase();
+    if (e.key === 'Enter' || e.key === 'Escape') {
+      if (this.poly.length) this.finishPolygon(e.key === 'Enter');
+      else if (this.transform.active) this.finishTransform(e.key === 'Enter');
+      else return false;
       return true;
     }
-    return false;
+    if (mod && k === 'a' && !e.shiftKey) this.selectAll();
+    else if (mod && (k === 'd' || (k === 'a' && e.shiftKey))) this.deselect();
+    else if (mod && k === 'i' && e.shiftKey) this.invertSelection();
+    else if (mod && k === 'c') this.copy();
+    else if (mod && k === 'x') this.cut();
+    else if (mod && k === 't') this.setTool('transform');
+    else if (!mod && (e.key === 'Delete' || e.key === 'Backspace')) this.deleteSelection();
+    else return false;
+    return true;
   }
 
   private toDocPoint(p: InputPoint): InputPoint {
@@ -371,9 +488,12 @@ export class Editor {
     } else {
       src = layer.surface.ctx.getImageData(0, 0, w, h);
     }
+    if (!this.selection.isSelected(p.x, p.y)) return;
     let mask = floodMask(src.data, w, h, p.x, p.y, this.fill.tolerance);
     if (!mask) return;
     if (this.fill.expand > 0) mask = dilate(mask, w, h, this.fill.expand);
+    const sel = this.selection.mask;
+    if (sel) for (let i = 0; i < mask.length; i++) mask[i] &= sel[i];
     const r = maskBounds(mask, w, h);
     if (!r) return;
 
@@ -407,7 +527,7 @@ export class Editor {
     if (!this.shapeStart) return;
     const a = this.shapeStart;
     const b = shift ? constrain(this.shape.kind, a, to) : to;
-    this.live.update(shapeBounds([a, b], this.shape.width), (ctx) => drawShape(ctx, this.shape, [a, b], this.color));
+    this.live.update(shapeBounds([a, b], this.shape.width), (ctx) => drawShape(ctx, this.shape, [a, b], this.color), this.selection.canvas);
     this.requestRender();
   }
 
@@ -422,7 +542,7 @@ export class Editor {
       this.live.update(null, () => {});
     } else {
       const opts = closed ? this.shape : { ...this.shape, fill: false };
-      this.live.update(shapeBounds(pts, this.shape.width), (ctx) => drawShape(ctx, opts, pts, this.color, closed));
+      this.live.update(shapeBounds(pts, this.shape.width), (ctx) => drawShape(ctx, opts, pts, this.color, closed), this.selection.canvas);
     }
     this.requestRender();
   }
@@ -478,6 +598,7 @@ export class Editor {
     this.live.begin(layer);
     this.live.update({ x: at.x - 2, y: at.y - 2, w: size.w + 4 + this.text.size * 0.3, h: size.h + 4 }, (ctx) =>
       drawText(ctx, text, at.x, at.y, this.text, this.color),
+      this.selection.canvas,
     );
     this.pushCommand(this.live.commit('text'));
   }
@@ -487,15 +608,324 @@ export class Editor {
     this.changed();
   }
 
+
+  // --- Sélection ---
+
+  /** Remplace la sélection (étape annulable). */
+  setSelection(mask: Uint8Array | null): void {
+    this.finishTransform(true);
+    const before = this.selection.copyMask();
+    this.selection.set(mask);
+    this.pushCommand(new SelectionChange(this.selection, before, this.selection.copyMask()));
+  }
+
+  selectAll(): void {
+    this.setSelection(new Uint8Array(this.doc.width * this.doc.height).fill(1));
+  }
+
+  deselect(): void {
+    if (this.selection.active) this.setSelection(null);
+  }
+
+  invertSelection(): void {
+    const n = this.doc.width * this.doc.height;
+    const cur = this.selection.mask;
+    const inv = new Uint8Array(n);
+    for (let i = 0; i < n; i++) inv[i] = cur ? cur[i] ^ 1 : 0;
+    this.setSelection(inv);
+  }
+
+  private finishSelectDraft(): void {
+    const d = this.selectDraft;
+    this.selectDraft = null;
+    if (!d) return;
+    const { width: w, height: h } = this.doc;
+    const [a, b] = d.points;
+    let mask: Uint8Array | null = null;
+    if (this.selectOpts.kind === 'lasso') {
+      if (d.points.length > 3) mask = polygonMask(d.points, w, h);
+    } else if (Math.abs(b.x - a.x) >= 1 && Math.abs(b.y - a.y) >= 1) {
+      mask = rasterMask(w, h, (ctx) => {
+        ctx.beginPath();
+        if (this.selectOpts.kind === 'ellipse') {
+          ctx.ellipse((a.x + b.x) / 2, (a.y + b.y) / 2, Math.abs(b.x - a.x) / 2, Math.abs(b.y - a.y) / 2, 0, 0, Math.PI * 2);
+        } else {
+          ctx.rect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y));
+        }
+        ctx.fill();
+      });
+    }
+    if (!mask) {
+      // Simple clic : désélectionne (en mode « remplacer »)
+      if (d.mode === 'replace') this.deselect();
+      else this.changed();
+      return;
+    }
+    this.setSelection(combineMasks(this.selection.mask, mask, d.mode));
+  }
+
+  private magicWand(p: Point, mode: SelectMode): void {
+    const { width: w, height: h } = this.doc;
+    let data: ImageData;
+    if (this.selectOpts.source === 'canvas') {
+      this.temp ??= createSurface(w, h);
+      this.temp.ctx.clearRect(0, 0, w, h);
+      renderComposite(this.temp.ctx, this.doc, false);
+      data = this.temp.ctx.getImageData(0, 0, w, h);
+    } else {
+      data = this.doc.active.surface.ctx.getImageData(0, 0, w, h);
+    }
+    const mask = floodMask(data.data, w, h, p.x, p.y, this.selectOpts.tolerance);
+    // +1 px : inclut le bord anticrénelé (sinon un liseré reste en place quand on déplace)
+    if (mask) this.setSelection(combineMasks(this.selection.mask, dilate(mask, w, h, 1), mode));
+  }
+
+  /** Efface le contenu sélectionné (ou tout le calque) du calque actif. */
+  deleteSelection(): void {
+    const layer = this.editableLayer();
+    if (!layer) return;
+    const { width: w, height: h } = this.doc;
+    const r = this.selection.bounds ?? { x: 0, y: 0, w, h };
+    const ctx = layer.surface.ctx;
+    const before = ctx.getImageData(r.x, r.y, r.w, r.h);
+    if (this.selection.canvas) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.drawImage(this.selection.canvas, 0, 0);
+      ctx.restore();
+    } else {
+      ctx.clearRect(r.x, r.y, r.w, r.h);
+    }
+    this.pushCommand(new PixelPatch('delete', layer, r, before, ctx.getImageData(r.x, r.y, r.w, r.h)));
+  }
+
+  // --- Presse-papiers (interne) ---
+
+  get hasClipboard(): boolean {
+    return this.clipboard !== null;
+  }
+
+  copy(): boolean {
+    this.finishTransform(true);
+    const layer = this.doc.active;
+    const r = this.selection.bounds ?? contentBounds(layer, this.doc.width, this.doc.height);
+    if (!r) return false;
+    const s = createSurface(r.w, r.h);
+    s.ctx.drawImage(layer.surface.canvas, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
+    if (this.selection.canvas) {
+      s.ctx.globalCompositeOperation = 'destination-in';
+      s.ctx.drawImage(this.selection.canvas, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
+    }
+    this.clipboard = { surface: s, x: r.x, y: r.y };
+    this.changed();
+    return true;
+  }
+
+  cut(): void {
+    if (this.copy()) this.deleteSelection();
+  }
+
+  /** Colle dans un nouveau calque, à la même position, prêt à être déplacé. */
+  paste(): void {
+    const c = this.clipboard;
+    if (!c) return;
+    this.placeOnNewLayer(c.surface.canvas, c.x, c.y);
+  }
+
+  /** Importe une image dans un nouveau calque (réduite si plus grande que le document), puis la transforme. */
+  importImage(img: CanvasImageSource, width: number, height: number): void {
+    const { width: w, height: h } = this.doc;
+    const k = Math.min(1, w / width, h / height);
+    const s = createSurface(Math.max(1, Math.round(width * k)), Math.max(1, Math.round(height * k)));
+    s.ctx.imageSmoothingQuality = 'high';
+    s.ctx.drawImage(img, 0, 0, s.canvas.width, s.canvas.height);
+    this.placeOnNewLayer(s.canvas, Math.round((w - s.canvas.width) / 2), Math.round((h - s.canvas.height) / 2));
+  }
+
+  private placeOnNewLayer(src: HTMLCanvasElement, x: number, y: number): void {
+    this.finishTransform(true);
+    this.finishPolygon(true);
+    if (this.selection.active) this.setSelection(null);
+    const layer = this.addLayer();
+    layer.surface.ctx.drawImage(src, x, y);
+    this.tool = 'transform';
+    this.startTransform();
+    this.changed();
+  }
+
+  // --- Déplacer / transformer ---
+
+  private startTransform(): boolean {
+    if (this.transform.active) return true;
+    const layer = this.editableLayer();
+    if (!layer) return false;
+    const ok = this.transform.begin(layer, this.selection);
+    if (!ok) this.notice = 'transformEmpty';
+    this.changed();
+    return ok;
+  }
+
+  /** Valide (commit) ou annule la transformation en cours. */
+  finishTransform(commit: boolean): void {
+    if (!this.transform.active) return;
+    if (commit) this.pushCommand(this.transform.commit(this.selection));
+    else {
+      this.transform.cancel();
+      this.changed();
+    }
+  }
+
+  // --- Filtres et effets ---
+
+  get filterSession(): FilterSession | null {
+    return this.filter ? { kind: this.filter.kind, params: { ...this.filter.params } } : null;
+  }
+
+  /** Ouvre un filtre avec aperçu en direct sur le calque actif (dans la sélection). */
+  beginFilter(kind: FilterKind): boolean {
+    this.cancelFilter();
+    this.finishTransform(true);
+    const layer = this.editableLayer();
+    if (!layer) return false;
+    const { width: w, height: h } = this.doc;
+    const rect = this.selection.bounds ?? { x: 0, y: 0, w, h };
+    const ctx = layer.surface.ctx;
+    this.filter = {
+      kind,
+      params: defaultParams(kind),
+      layer,
+      rect,
+      orig: ctx.getImageData(rect.x, rect.y, rect.w, rect.h),
+      out: ctx.createImageData(rect.w, rect.h),
+      pending: false,
+    };
+    this.computeFilter();
+    return true;
+  }
+
+  setFilterParams(params: Record<string, number>): void {
+    const f = this.filter;
+    if (!f) return;
+    f.params = { ...f.params, ...params };
+    if (f.pending) return;
+    f.pending = true;
+    requestAnimationFrame(() => this.computeFilter());
+  }
+
+  private computeFilter(): void {
+    const f = this.filter;
+    if (!f) return;
+    f.pending = false;
+    const { rect: r, orig, out } = f;
+    runFilter(f.kind, orig.data, out.data, r.w, r.h, f.params);
+    const sel = this.selection.mask;
+    if (sel) {
+      const W = this.doc.width;
+      for (let y = 0; y < r.h; y++) {
+        for (let x = 0; x < r.w; x++) {
+          if (sel[(r.y + y) * W + r.x + x]) continue;
+          const i = (y * r.w + x) * 4;
+          out.data[i] = orig.data[i];
+          out.data[i + 1] = orig.data[i + 1];
+          out.data[i + 2] = orig.data[i + 2];
+          out.data[i + 3] = orig.data[i + 3];
+        }
+      }
+    }
+    f.layer.surface.ctx.putImageData(out, r.x, r.y);
+    this.changed();
+  }
+
+  applyFilter(): void {
+    const f = this.filter;
+    if (!f) return;
+    if (f.pending) this.computeFilter();
+    this.filter = null;
+    const r = f.rect;
+    this.pushCommand(new PixelPatch('filter', f.layer, r, f.orig, f.layer.surface.ctx.getImageData(r.x, r.y, r.w, r.h)));
+  }
+
+  cancelFilter(): void {
+    const f = this.filter;
+    if (!f) return;
+    this.filter = null;
+    f.layer.surface.ctx.putImageData(f.orig, f.rect.x, f.rect.y);
+    this.changed();
+  }
+
+  // --- Projet ---
+
+  /** Remplace le contenu par un projet enregistré (même taille de document). */
+  async loadProject(data: ProjectData): Promise<void> {
+    await loadProject(this.doc, data);
+    this.history.clear();
+    this.selection.set(null);
+    this.changed();
+  }
+
+  // --- Affichage par-dessus la toile ---
+
+  private drawOverlay(ctx: CanvasRenderingContext2D): void {
+    const z = this.view.zoom;
+    const [a, b, c, d, e, f] = this.view.matrix();
+    ctx.save();
+    ctx.transform(a, b, c, d, e, f);
+    // « Fourmis » : trait sombre continu + tirets blancs qui défilent (visible sur tout fond)
+    const ants = (path: Path2D) => {
+      const dash = 4 / z;
+      ctx.lineWidth = 1 / z;
+      ctx.setLineDash([]);
+      ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+      ctx.stroke(path);
+      ctx.setLineDash([dash, dash]);
+      ctx.lineDashOffset = ((performance.now() / 60) % 8) / z;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke(path);
+    };
+    const segs = this.selection.segments;
+    if (segs.length && !this.transform.active) {
+      if (this.selPath?.src !== segs) {
+        const path = new Path2D();
+        for (let i = 0; i < segs.length; i += 4) {
+          path.moveTo(segs[i], segs[i + 1]);
+          path.lineTo(segs[i + 2], segs[i + 3]);
+        }
+        this.selPath = { src: segs, path };
+      }
+      ants(this.selPath.path);
+    }
+    const draft = this.selectDraft;
+    if (draft) {
+      const path = new Path2D();
+      const [p, q] = draft.points;
+      if (this.selectOpts.kind === 'lasso') {
+        draft.points.forEach((pt, i) => (i ? path.lineTo(pt.x, pt.y) : path.moveTo(pt.x, pt.y)));
+        path.closePath();
+      } else if (this.selectOpts.kind === 'ellipse') {
+        path.ellipse((p.x + q.x) / 2, (p.y + q.y) / 2, Math.abs(q.x - p.x) / 2, Math.abs(q.y - p.y) / 2, 0, 0, Math.PI * 2);
+      } else {
+        path.rect(Math.min(p.x, q.x), Math.min(p.y, q.y), Math.abs(q.x - p.x), Math.abs(q.y - p.y));
+      }
+      ants(path);
+    }
+    ctx.restore();
+    this.transform.drawOverlay(ctx, this.view);
+  }
+
   // ---------- Historique ----------
 
   undo(): void {
+    if (this.transform.active) {
+      this.finishTransform(false);
+      return;
+    }
+    if (this.filter) this.cancelFilter();
     if (this.stroke.active || this.live.active) return;
     if (this.history.undo()) this.changed();
   }
 
   redo(): void {
-    if (this.stroke.active || this.live.active) return;
+    if (this.stroke.active || this.live.active || this.transform.active) return;
     if (this.history.redo()) this.changed();
   }
 
@@ -504,6 +934,7 @@ export class Editor {
   setActiveLayer(id: number): void {
     if (this.doc.get(id)) {
       this.finishPolygon(true);
+      this.finishTransform(true);
       this.doc.activeId = id;
       this.changed();
     }
@@ -568,6 +999,7 @@ export class Editor {
 
   setBackground(color: string | null): void {
     this.doc.background = color;
+    this.history.version++; // pour la sauvegarde automatique
     this.changed();
   }
 

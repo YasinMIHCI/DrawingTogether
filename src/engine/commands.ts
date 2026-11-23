@@ -142,3 +142,17 @@ export class MergeDown implements Command {
     this.doc.activeId = this.upper.id;
   }
 }
+
+/** Plusieurs commandes annulées / rétablies ensemble. */
+export class CompoundCommand implements Command {
+  readonly bytes: number;
+  constructor(readonly label: string, private readonly parts: Command[]) {
+    this.bytes = parts.reduce((n, c) => n + c.bytes, 0);
+  }
+  undo(): void {
+    for (let i = this.parts.length - 1; i >= 0; i--) this.parts[i].undo();
+  }
+  redo(): void {
+    for (const c of this.parts) c.redo();
+  }
+}
