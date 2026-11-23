@@ -67,10 +67,10 @@ Le **moteur de dessin est unique** : les deux interfaces (bureau / mobile) et to
 - ✅ **T0.5** Système de traduction **français + anglais** (langue du navigateur par défaut, sélecteur manuel).
 
 ### Phase 1 — Moteur de dessin (cœur)
-- **T1.1** Toile : taille du document, fond, zoom, déplacement, **rotation**, ajustement à l'écran.
-- **T1.2** Calques : ajouter, supprimer, dupliquer, réordonner, masquer, opacité, verrouillage, fusion, modes de fusion (normal, multiplier, superposition…), calque de fond.
-- **T1.3** Historique annuler/rétablir (par commandes, limite mémoire).
-- **T1.4** Moteur de pinceau : tampons interpolés, lissage (stabilisateur), pression → taille/opacité, couleur, taille, opacité.
+- ✅ **T1.1** Toile : taille du document, fond, zoom, déplacement, **rotation**, ajustement à l'écran.
+- ✅ **T1.2** Calques : ajouter, supprimer, dupliquer, réordonner, masquer, opacité, verrouillage, fusion, modes de fusion (normal, multiplier, superposition…), calque de fond.
+- ✅ **T1.3** Historique annuler/rétablir (par commandes, limite mémoire).
+- ✅ **T1.4** Moteur de pinceau : tampons interpolés, lissage (stabilisateur), pression → taille/opacité, couleur, taille, opacité.
 - **T1.5** Bibliothèque de pinceaux par catégories (comme tes captures) :
   - *Stylo* : plume fine, plume réaliste, plume ronde, plume épaisse, stylo texturé, stylo croquis, calligraphie, feutre précis, feutre.
   - *Croquis* : crayon, porte-mine, fusain, craie grasse, pastel, craie.

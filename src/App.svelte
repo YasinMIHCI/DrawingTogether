@@ -3,6 +3,7 @@
   import Home from './pages/Home.svelte';
   import Soon from './pages/Soon.svelte';
   import Settings from './pages/Settings.svelte';
+  import Draw from './pages/Draw.svelte';
   import { router } from './lib/router.svelte';
   import { settings } from './lib/settings.svelte';
   import { uiStyle } from './lib/screen.svelte';
@@ -13,9 +14,9 @@
   });
 </script>
 
-<TopBar />
+{#if router.route !== 'draw'}<TopBar />{/if}
 {#if router.route === 'draw'}
-  <Soon title="home.draw.title" />
+  <Draw />
 {:else if router.route === 'shared'}
   <Soon title="home.shared.title" />
 {:else if router.route === 'games'}
