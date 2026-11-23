@@ -96,15 +96,15 @@ L'utilisateur bascule entre « Style Krita » et « Style Paint » dans les rég
 - **T2.7** Sélecteur de style d'interface (Krita / Paint / Mobile) dans les réglages.
 
 ### Phase 3 — Interface mobile / tablette (d'après tes captures)
-- **T3.1** Écran plein toile, en haut : retour, annuler/rétablir, galerie/aperçu, menu « … ».
-- **T3.2** Curseurs rapides taille + opacité au-dessus de la barre du bas (avec valeur numérique).
-- **T3.3** Barre du bas à 5 boutons : bascule pinceau/gomme · outils · pinceaux · couleur · calques.
-- **T3.4** Panneau **Outils** (grille : déplacer/transformer, sélection, liquéfier, figure, filtres, pinceau, gomme, remplir, pipette, effet).
-- **T3.5** Panneau **Pinceaux** : catégories à gauche, liste avec aperçu du trait à droite, flèche → réglages du pinceau.
-- **T3.6** Panneau **Couleur** : couleur principale/secondaire, hex modifiable, roue + carré, onglets « palettes » (ajout de couleurs) et « curseurs » (HSV / RVB), transparent.
-- **T3.7** Panneau **Calques** latéral (vignettes, +, menu …, fond).
-- **T3.8** Gestes : pincer = zoom/rotation, 2 doigts tap = annuler, 3 doigts tap = rétablir, appui long = pipette, rejet de la paume avec stylet.
-- **T3.9** Mise en page tablette (panneaux plus larges, éventuellement côte à côte en paysage).
+- ✅ **T3.1** Écran plein toile, en haut : retour, annuler/rétablir, galerie/aperçu, menu « … ».
+- ✅ **T3.2** Curseurs rapides taille + opacité au-dessus de la barre du bas (avec valeur numérique).
+- ✅ **T3.3** Barre du bas à 5 boutons : bascule pinceau/gomme · outils · pinceaux · couleur · calques.
+- ✅ **T3.4** Panneau **Outils** (grille : déplacer/transformer, sélection, liquéfier, figure, filtres, pinceau, gomme, remplir, pipette, effet).
+- ✅ **T3.5** Panneau **Pinceaux** : catégories à gauche, liste avec aperçu du trait à droite, flèche → réglages du pinceau.
+- ✅ **T3.6** Panneau **Couleur** : couleur principale/secondaire, hex modifiable, roue + carré, onglets « palettes » (ajout de couleurs) et « curseurs » (HSV / RVB), transparent.
+- ✅ **T3.7** Panneau **Calques** latéral (vignettes, +, menu …, fond).
+- ✅ **T3.8** Gestes : pincer = zoom/rotation, 2 doigts tap = annuler, 3 doigts tap = rétablir, appui long = pipette, rejet de la paume avec stylet.
+- ✅ **T3.9** Mise en page tablette (panneaux plus larges, éventuellement côte à côte en paysage).
 
 ### Phase 4 — Réseau et salles
 - **T4.1** Couche `Transport` Supabase Realtime (canaux *broadcast* pour les traits, *presence* pour la liste des joueurs). Seule la clé publique `anon` va dans le code, jamais la clé `service_role`.

@@ -18,12 +18,24 @@ export interface InputHandlers {
   redo(): void;
   /** Touches propres à l'outil (Entrée, Échap…). Renvoie true si la touche est utilisée. */
   key(e: KeyboardEvent): boolean;
+  /** Appui long (ou Alt+clic) : l'outil accepte-t-il la pipette temporaire ? */
+  canPick(): boolean;
+  /** Pipette temporaire au point écran (null = fin). */
+  pick(p: Point | null): void;
+  /** Tape rapide à plusieurs doigts (2 = annuler, 3 = rétablir). */
+  multiTap(fingers: number): void;
 }
 
-type Mode = 'idle' | 'stroke' | 'pan' | 'rotate' | 'gesture' | 'wait';
+type Mode = 'idle' | 'stroke' | 'pan' | 'rotate' | 'gesture' | 'wait' | 'pick';
 
 /** Une pression trop courte au 2e doigt : c'était un geste, on annule le trait commencé. */
 const GESTURE_GRACE_MS = 250;
+/** Appui long sans bouger = pipette. */
+const LONG_PRESS_MS = 500;
+const LONG_PRESS_MOVE = 8;
+/** Tape à plusieurs doigts : courte et presque immobile. */
+const TAP_MS = 350;
+const TAP_MOVE = 12;
 
 function pressureOf(e: PointerEvent): number {
   if (e.pointerType === 'pen') return e.pressure;
@@ -56,6 +68,10 @@ export function attachInput(el: HTMLElement, h: InputHandlers): () => void {
   let space = false;
   let gesture: { start: ViewTransform; ids: [number, number]; s0: Point; s1: Point } | null = null;
   let rect = el.getBoundingClientRect();
+  let longPress: ReturnType<typeof setTimeout> | undefined;
+  let pressStart: Point = { x: 0, y: 0 };
+  // Suivi d'une tape à plusieurs doigts
+  let tap: { start: number; max: number; moved: boolean; origins: Map<number, Point> } | null = null;
 
   const local = (e: { clientX: number; clientY: number }): Point => ({ x: e.clientX - rect.left, y: e.clientY - rect.top });
   const updateCursor = () => {
@@ -75,6 +91,13 @@ export function attachInput(el: HTMLElement, h: InputHandlers): () => void {
     pointers.set(e.pointerId, { p, type: e.pointerType });
     el.setPointerCapture?.(e.pointerId);
     e.preventDefault();
+
+    if (e.pointerType === 'touch') {
+      tap ??= { start: performance.now(), max: 0, moved: false, origins: new Map() };
+      tap.origins.set(e.pointerId, p);
+      tap.max = Math.max(tap.max, [...pointers.values()].filter((v) => v.type === 'touch').length);
+    }
+    clearTimeout(longPress);
 
     if (e.pointerType === 'touch') {
       if (mode === 'stroke' && strokeType === 'pen') return; // paume pendant le stylet
@@ -101,11 +124,28 @@ export function attachInput(el: HTMLElement, h: InputHandlers): () => void {
       return;
     }
     if (e.button !== 0) return;
+    // Alt + clic : pipette temporaire
+    if (e.altKey && e.pointerType !== 'touch' && h.canPick()) {
+      mode = 'pick';
+      strokeId = e.pointerId;
+      h.pick(p);
+      return;
+    }
     if (h.strokeStart({ ...p, pressure: pressureOf(e), shift: e.shiftKey, alt: e.altKey }, e.pointerType)) {
       mode = 'stroke';
       strokeId = e.pointerId;
       strokeType = e.pointerType;
       strokeStartTime = performance.now();
+      if (e.pointerType === 'touch' && h.canPick()) {
+        pressStart = p;
+        const id = e.pointerId;
+        longPress = setTimeout(() => {
+          if (mode !== 'stroke' || strokeId !== id) return;
+          h.strokeCancel();
+          mode = 'pick';
+          h.pick(pointers.get(id)?.p ?? pressStart);
+        }, LONG_PRESS_MS);
+      }
     } else {
       mode = 'wait';
     }
@@ -117,8 +157,13 @@ export function attachInput(el: HTMLElement, h: InputHandlers): () => void {
     const ptr = pointers.get(e.pointerId);
     if (!ptr) return;
     ptr.p = p;
+    const origin = tap?.origins.get(e.pointerId);
+    if (tap && origin && Math.hypot(p.x - origin.x, p.y - origin.y) > TAP_MOVE) tap.moved = true;
+    if (Math.hypot(p.x - pressStart.x, p.y - pressStart.y) > LONG_PRESS_MOVE) clearTimeout(longPress);
 
-    if (mode === 'stroke' && e.pointerId === strokeId) {
+    if (mode === 'pick' && e.pointerId === strokeId) {
+      h.pick(p);
+    } else if (mode === 'stroke' && e.pointerId === strokeId) {
       const events = e.getCoalescedEvents?.() ?? [];
       const list = events.length ? events : [e];
       h.strokeMove(list.map((ev) => ({ ...local(ev), pressure: pressureOf(ev), shift: e.shiftKey, alt: e.altKey })));
@@ -145,7 +190,11 @@ export function attachInput(el: HTMLElement, h: InputHandlers): () => void {
   function onUp(e: PointerEvent): void {
     if (!pointers.has(e.pointerId)) return;
     pointers.delete(e.pointerId);
-    if (mode === 'stroke' && e.pointerId === strokeId) {
+    clearTimeout(longPress);
+    if (mode === 'pick' && e.pointerId === strokeId) {
+      h.pick(null);
+      mode = 'idle';
+    } else if (mode === 'stroke' && e.pointerId === strokeId) {
       if (e.type === 'pointercancel') h.strokeCancel();
       else h.strokeEnd();
       mode = 'idle';
@@ -156,7 +205,13 @@ export function attachInput(el: HTMLElement, h: InputHandlers): () => void {
       mode = 'wait';
     }
     // Après un geste, on attend que tous les doigts soient levés avant de redessiner.
-    if (pointers.size === 0) mode = 'idle';
+    if (pointers.size === 0) {
+      mode = 'idle';
+      if (tap && tap.max >= 2 && !tap.moved && performance.now() - tap.start < TAP_MS && e.type !== 'pointercancel') {
+        h.multiTap(tap.max);
+      }
+      tap = null;
+    }
     updateCursor();
   }
 
@@ -226,6 +281,7 @@ export function attachInput(el: HTMLElement, h: InputHandlers): () => void {
   updateCursor();
 
   return () => {
+    clearTimeout(longPress);
     el.removeEventListener('pointerdown', onDown);
     el.removeEventListener('pointermove', onMove);
     el.removeEventListener('pointerup', onUp);

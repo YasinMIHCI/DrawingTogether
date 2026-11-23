@@ -100,6 +100,8 @@ export class Editor {
   private dpr = 1;
   private workspace = '#8a8f99';
   private hoverAt: Point | null = null;
+  /** Pipette temporaire en cours (point écran), pour afficher la loupe. */
+  private pickAt: Point | null = null;
   private raf = 0;
   private listeners = new Set<() => void>();
   private fitted = false;
@@ -175,6 +177,13 @@ export class Editor {
       undo: () => this.undo(),
       redo: () => this.redo(),
       key: (e) => this.key(e),
+      canPick: () => this.tool === 'brush' || this.tool === 'eraser' || this.tool === 'fill',
+      pick: (p) => {
+        this.pickAt = p;
+        if (p) this.pick(this.view.toDoc(p));
+        this.requestRender();
+      },
+      multiTap: (n) => (n === 2 ? this.undo() : n === 3 ? this.redo() : undefined),
     });
 
     // Animation des « fourmis » autour de la sélection
@@ -910,6 +919,25 @@ export class Editor {
     }
     ctx.restore();
     this.transform.drawOverlay(ctx, this.view);
+    if (this.pickAt) {
+      // Anneau de la pipette, au-dessus du doigt pour rester visible
+      const { x, y } = this.pickAt;
+      const cy = y - 70;
+      ctx.save();
+      ctx.lineWidth = 14;
+      ctx.strokeStyle = this.color;
+      ctx.beginPath();
+      ctx.arc(x, cy, 34, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+      for (const r of [27, 41]) {
+        ctx.beginPath();
+        ctx.arc(x, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
   }
 
   // ---------- Historique ----------
@@ -967,6 +995,14 @@ export class Editor {
     const from = this.doc.indexOf(id);
     const to = from + dir;
     if (from < 0 || to < 0 || to >= this.doc.layers.length) return;
+    this.exec(new MoveLayer(this.doc, id, from, to));
+  }
+
+  /** Déplace un calque à une position donnée (index 0 = en bas). */
+  moveLayerTo(id: number, to: number): void {
+    const from = this.doc.indexOf(id);
+    to = Math.max(0, Math.min(this.doc.layers.length - 1, to));
+    if (from < 0 || from === to) return;
     this.exec(new MoveLayer(this.doc, id, from, to));
   }
 

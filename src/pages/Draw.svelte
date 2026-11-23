@@ -7,6 +7,8 @@
   import { downloadBlob, pickFile, timestampedName } from '../lib/download';
   import { t } from '../lib/i18n/t.svelte';
   import DevPanel from '../ui/dev/DevPanel.svelte';
+  import MobileUI from '../ui/mobile/MobileUI.svelte';
+  import { uiStyle } from '../lib/screen.svelte';
   import NewDocDialog from '../ui/dev/NewDocDialog.svelte';
   import type { FileActions } from '../ui/dev/types';
 
@@ -145,7 +147,12 @@
   {#if editor}
     {#key editor}
       <canvas class="canvas-surface" use:attachEditor={editor}></canvas>
-      <DevPanel {editor} {files} {status} />
+      {#if uiStyle() === 'mobile'}
+        <MobileUI {editor} {files} {status} />
+      {:else}
+        <!-- Interfaces bureau Krita / Paint : phase 2. En attendant, panneau de test. -->
+        <DevPanel {editor} {files} {status} />
+      {/if}
     {/key}
   {/if}
   {#if showNew}
@@ -154,7 +161,7 @@
 </div>
 
 <style>
-  .draw { position: fixed; inset: 0; overflow: hidden; --workspace: #9a9ea8; }
-  @media (prefers-color-scheme: dark) { .draw { --workspace: #2a2d35; } }
+  .draw { position: fixed; inset: 0; overflow: hidden; --workspace: #c9cacd; }
+  @media (prefers-color-scheme: dark) { .draw { --workspace: #1b1c20; } }
   canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 </style>
