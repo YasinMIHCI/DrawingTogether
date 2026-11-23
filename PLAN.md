@@ -60,11 +60,11 @@ Le **moteur de dessin est unique** : les deux interfaces (bureau / mobile) et to
 ## 3. Phases et tâches
 
 ### Phase 0 — Fondations
-- **T0.1** Projet Vite + TS + structure de dossiers, lint, tests unitaires (Vitest).
-- **T0.2** Déploiement GitHub Pages via GitHub Actions (à chaque push sur `main`).
-- **T0.3** Page d'accueil minimale (choix : Toile partagée / Jeux / Dessin libre) + choix pseudo + avatar dans une liste (pas de compte).
-- **T0.4** Détection bureau/mobile + bascule manuelle ; gestion du viewport mobile (empêcher le zoom/scroll du navigateur sur la toile).
-- **T0.5** Système de traduction **français + anglais** (langue du navigateur par défaut, sélecteur manuel).
+- ✅ **T0.1** Projet Vite + TS + structure de dossiers, lint, tests unitaires (Vitest).
+- ✅ **T0.2** Déploiement GitHub Pages via GitHub Actions (à chaque push sur `main`).
+- ✅ **T0.3** Page d'accueil minimale (choix : Toile partagée / Jeux / Dessin libre) + choix pseudo + avatar dans une liste (pas de compte).
+- ✅ **T0.4** Détection bureau/mobile + bascule manuelle ; gestion du viewport mobile (empêcher le zoom/scroll du navigateur sur la toile).
+- ✅ **T0.5** Système de traduction **français + anglais** (langue du navigateur par défaut, sélecteur manuel).
 
 ### Phase 1 — Moteur de dessin (cœur)
 - **T1.1** Toile : taille du document, fond, zoom, déplacement, **rotation**, ajustement à l'écran.

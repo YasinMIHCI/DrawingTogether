@@ -1,0 +1,47 @@
+:root {
+  --bg: #fbf6ee;
+  --surface: #ffffff;
+  --surface-2: #f3ece0;
+  --ink: #1f2430;
+  --ink-soft: #5b6170;
+  --line: #e3d9c8;
+  --accent: #ff6b4a;
+  --accent-ink: #ffffff;
+  --teal: #2bb3a3;
+  --sun: #ffc94a;
+  --radius: 16px;
+  --shadow: 0 2px 0 rgba(31, 36, 48, 0.08), 0 8px 24px rgba(31, 36, 48, 0.06);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16181f;
+    --surface: #1f222b;
+    --surface-2: #282c37;
+    --ink: #f1ede6;
+    --ink-soft: #a7abb6;
+    --line: #343846;
+    --shadow: 0 2px 0 rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.45 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+a { color: inherit; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+
+/* Surface de dessin : pas de zoom, de défilement ni de sélection du navigateur. */
+.canvas-surface {
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
