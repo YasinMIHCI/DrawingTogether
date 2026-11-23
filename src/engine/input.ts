@@ -5,14 +5,19 @@ import { ViewTransform } from './view';
 export interface InputHandlers {
   view: ViewTransform;
   viewChanged(): void;
-  /** Coordonnées écran (px CSS, relatives à l'élément). Renvoie false si le dessin est refusé. */
-  strokeStart(p: InputPoint): boolean;
+  /**
+   * Coordonnées écran (px CSS, relatives à l'élément). Renvoie true si l'outil veut suivre
+   * le glissement (strokeMove / strokeEnd), false pour un outil à un seul clic ou un refus.
+   */
+  strokeStart(p: InputPoint, pointerType: string): boolean;
   strokeMove(points: InputPoint[]): void;
   strokeEnd(): void;
   strokeCancel(): void;
   hover(p: Point | null): void;
   undo(): void;
   redo(): void;
+  /** Touches propres à l'outil (Entrée, Échap…). Renvoie true si la touche est utilisée. */
+  key(e: KeyboardEvent): boolean;
 }
 
 type Mode = 'idle' | 'stroke' | 'pan' | 'rotate' | 'gesture' | 'wait';
@@ -96,7 +101,7 @@ export function attachInput(el: HTMLElement, h: InputHandlers): () => void {
       return;
     }
     if (e.button !== 0) return;
-    if (h.strokeStart({ ...p, pressure: pressureOf(e) })) {
+    if (h.strokeStart({ ...p, pressure: pressureOf(e), shift: e.shiftKey }, e.pointerType)) {
       mode = 'stroke';
       strokeId = e.pointerId;
       strokeType = e.pointerType;
@@ -116,7 +121,7 @@ export function attachInput(el: HTMLElement, h: InputHandlers): () => void {
     if (mode === 'stroke' && e.pointerId === strokeId) {
       const events = e.getCoalescedEvents?.() ?? [];
       const list = events.length ? events : [e];
-      h.strokeMove(list.map((ev) => ({ ...local(ev), pressure: pressureOf(ev) })));
+      h.strokeMove(list.map((ev) => ({ ...local(ev), pressure: pressureOf(ev), shift: e.shiftKey })));
     } else if (mode === 'pan') {
       h.view.panBy(p.x - last.x, p.y - last.y);
       last = p;
@@ -172,6 +177,10 @@ export function attachInput(el: HTMLElement, h: InputHandlers): () => void {
 
   function onKeyDown(e: KeyboardEvent): void {
     if (isTextField(e.target)) return;
+    if (h.key(e)) {
+      e.preventDefault();
+      return;
+    }
     const mod = e.ctrlKey || e.metaKey;
     if (e.code === 'Space') {
       e.preventDefault();

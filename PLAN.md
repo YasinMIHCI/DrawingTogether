@@ -71,15 +71,15 @@ Le **moteur de dessin est unique** : les deux interfaces (bureau / mobile) et to
 - ✅ **T1.2** Calques : ajouter, supprimer, dupliquer, réordonner, masquer, opacité, verrouillage, fusion, modes de fusion (normal, multiplier, superposition…), calque de fond.
 - ✅ **T1.3** Historique annuler/rétablir (par commandes, limite mémoire).
 - ✅ **T1.4** Moteur de pinceau : tampons interpolés, lissage (stabilisateur), pression → taille/opacité, couleur, taille, opacité.
-- **T1.5** Bibliothèque de pinceaux par catégories (comme tes captures) :
+- ✅ **T1.5** Bibliothèque de pinceaux par catégories (comme tes captures) :
   - *Stylo* : plume fine, plume réaliste, plume ronde, plume épaisse, stylo texturé, stylo croquis, calligraphie, feutre précis, feutre.
   - *Croquis* : crayon, porte-mine, fusain, craie grasse, pastel, craie.
   - *Pinceau* : aquarelle circulaire, pinceau plat, aquarelle diluée, aquarelle humide, aquarelle brute, éclaboussures, pinceau mouillé, mélangeur rond, gouache.
   - *Pulvérisation* : doux (aérographe), pulvérisation, gouttelettes, bruit, pulvérisation floue.
   - *Mélange* : mélange de couleurs, flou, doigt (estompe), mélangeur de peinture, mélangeur fibreux, mélangeur texturé.
-  - *Décoration* ❓(Q12) · *Gomme* (versions dure/douce/texturée).
+  - *Décoration* : étoiles, cœurs, étincelles, fleurs, bulles, feuilles · *Gomme* : dure, douce, texturée.
   - Réglages par pinceau + « réinitialiser les options ». Pinceaux personnalisés (« + ») en phase ultérieure.
-- **T1.6** Outils : gomme, remplissage (pot de peinture, tolérance), pipette, formes (ligne, rectangle, ellipse, polygone), texte.
+- ✅ **T1.6** Outils : gomme, remplissage (pot de peinture, tolérance), pipette, formes (ligne, rectangle, ellipse, polygone), texte.
 - **T1.7** Sélection (rectangle, lasso, baguette magique) + déplacer/transformer (redimensionner, pivoter, retourner).
 - **T1.8** Filtres : luminosité/contraste, teinte/saturation, flou, inverser, niveaux de gris. *(Liquéfier et « Effet » plus tard : T1.10)*
 - **T1.9** Import d'image, export PNG/JPG, sauvegarde locale du projet.

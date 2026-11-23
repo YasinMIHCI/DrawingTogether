@@ -85,3 +85,22 @@ export function render(
     ctx.stroke();
   }
 }
+
+/**
+ * Dessine les calques visibles (et le fond si demandé) dans `ctx`, en coordonnées du document.
+ * Sert au remplissage « tous les calques » et à la pipette.
+ */
+export function renderComposite(ctx: CanvasRenderingContext2D, doc: DrawingDocument, withBackground: boolean): void {
+  if (withBackground && doc.background) {
+    ctx.fillStyle = doc.background;
+    ctx.fillRect(0, 0, doc.width, doc.height);
+  }
+  for (const layer of doc.layers) {
+    if (!layer.visible || layer.opacity <= 0) continue;
+    ctx.globalAlpha = layer.opacity;
+    ctx.globalCompositeOperation = compositeOp(layer.blend);
+    ctx.drawImage(layer.surface.canvas, 0, 0);
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
