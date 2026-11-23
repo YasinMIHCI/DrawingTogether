@@ -22,7 +22,7 @@ Un site web (hébergé sur **GitHub Pages**) autour du dessin, avec :
 ## 2. Contraintes techniques et architecture
 
 ### 2.1 GitHub Pages = site 100 % statique
-GitHub Pages ne peut pas exécuter de serveur. Pour le multijoueur il faut donc **un service temps réel externe**. Deux familles possibles ❓(Q1) :
+GitHub Pages ne peut pas exécuter de serveur. Pour le multijoueur il faut donc **un service temps réel externe**. **Décision : option B avec Supabase (Realtime)** — le site reste sur GitHub Pages, Supabase gère le temps réel. Pour mémoire :
 
 | Option | Principe | + | − |
 |---|---|---|---|
@@ -85,12 +85,15 @@ Le **moteur de dessin est unique** : les deux interfaces (bureau / mobile) et to
 - **T1.9** Import d'image, export PNG/JPG, sauvegarde locale du projet.
 - **T1.10** Avancé : liquéfier, effets, pinceaux personnalisés.
 
-### Phase 2 — Interface ordinateur (type Krita / Paint) ❓(Q11)
+### Phase 2 — Interface ordinateur : **deux interfaces au choix, Krita par défaut**
+L'utilisateur bascule entre « Style Krita » et « Style Paint » dans les réglages (choix mémorisé).
 - **T2.1** Barre de menus (Fichier, Édition, Image, Calque, Sélection, Filtres, Affichage).
 - **T2.2** Boîte à outils verticale à gauche + barre d'options de l'outil en haut.
 - **T2.3** Panneaux ancrés à droite : couleurs (roue + carré, HSV/RVB, hex, palettes), pinceaux, calques, navigateur.
 - **T2.4** Raccourcis clavier (B pinceau, E gomme, Ctrl+Z, [ ] taille, espace = main, etc.).
 - **T2.5** Panneaux redimensionnables / repliables, thème clair/sombre.
+- **T2.6** Interface « Style Paint » : ruban en haut (presse-papiers, image, outils, pinceaux, formes, taille, couleurs), toile au centre, barre d'état en bas.
+- **T2.7** Sélecteur de style d'interface (Krita / Paint / Mobile) dans les réglages.
 
 ### Phase 3 — Interface mobile / tablette (d'après tes captures)
 - **T3.1** Écran plein toile, en haut : retour, annuler/rétablir, galerie/aperçu, menu « … ».
@@ -104,14 +107,15 @@ Le **moteur de dessin est unique** : les deux interfaces (bureau / mobile) et to
 - **T3.9** Mise en page tablette (panneaux plus larges, éventuellement côte à côte en paysage).
 
 ### Phase 4 — Réseau et salles
-- **T4.1** Couche `Transport` selon l'option choisie ❓(Q1).
+- **T4.1** Couche `Transport` Supabase Realtime (canaux *broadcast* pour les traits, *presence* pour la liste des joueurs). Seule la clé publique `anon` va dans le code, jamais la clé `service_role`.
 - **T4.2** Créer une salle (code court + lien d'invitation + QR code), rejoindre, quitter.
-- **T4.3** Lobby : liste des joueurs avec avatars, hôte (couronne), places vides, nombre max ❓(Q3).
+- **T4.3** Lobby : liste des joueurs avec avatars, hôte (couronne), places vides, **8 joueurs max**.
 - **T4.4** Outils de l'hôte : exclure un joueur, verrouiller la salle, mot de passe ❓(Q7), transférer l'hôte.
 - **T4.5** Reconnexion après coupure, gestion du départ de l'hôte.
 
 ### Phase 5 — Toile partagée
-- **T5.1** Grande toile synchronisée (taille ❓Q3), curseurs des autres joueurs avec leur pseudo.
+- **T5.1** Grande toile synchronisée, curseurs des autres joueurs avec leur pseudo.
+- **T5.1b** Taille de cadre modulable : l'hôte choisit la taille à la création (préréglages, ex. 4000×3000 par défaut pour 8 joueurs) et peut l'agrandir en cours de partie (ajout de place sur les bords) ; les joueurs naviguent librement (zoom/déplacement + mini-carte).
 - **T5.2** Calques partagés ou calque par joueur ❓(Q10).
 - **T5.3** Arrivée en cours de partie (rattrapage de l'état).
 - **T5.4** Export de la toile ; sauvegarde/persistance ❓(Q10).
@@ -127,19 +131,19 @@ Le **moteur de dessin est unique** : les deux interfaces (bureau / mobile) et to
 | ID | Mode (nom provisoire) | Ce que j'ai compris | Statut |
 |---|---|---|---|
 | T6.5.1 | Normal | Alternance écrire → dessiner → décrire → dessiner… jusqu'à la fin du tour. | ✅ compris |
-| T6.5.2 | Imitation | Reproduire le dessin précédent ; le temps diminue à chaque tour. Le dessin d'origine est-il visible pendant qu'on dessine ou seulement quelques secondes ? Point de départ : phrase ou dessin ? | ❓ Q2 |
+| ~~T6.5.2~~ | Imitation (reporté) | Reproduire le dessin précédent ; le temps diminue à chaque tour. Le dessin d'origine est-il visible pendant qu'on dessine ou seulement quelques secondes ? Point de départ : phrase ou dessin ? | ❓ Q2 |
 | T6.5.3 | Animation | Chaque joueur dessine l'image suivante en voyant la précédente en transparence ; le résultat est une animation. | ✅ compris (nb d'images, vitesse ❓) |
-| T6.5.4 | Brise-glace | « Une seule phrase, poser des questions » — mécanique exacte ? | ❓ Q2 |
+| ~~T6.5.4~~ | Brise-glace (reporté) | « Une seule phrase, poser des questions » — mécanique exacte ? | ❓ Q2 |
 | T6.5.5 | Cadavre exquis | Chacun dessine une partie d'un personnage en ne voyant que le bas du dessin précédent ; résultat assemblé verticalement. | ✅ compris |
 | T6.5.6 | Complément | On commence par quelques traits, le suivant complète/interprète. | ✅ compris (qui fait les traits de départ ? joueur ou aléatoire ❓) |
 | T6.5.7 | Chef-d'œuvre | Un seul tour, un seul dessin, sans limite de temps. | ✅ compris |
 | T6.5.8 | Histoire | Écriture seule : chacun continue l'histoire en ne voyant que la phrase précédente. | ✅ compris |
-| T6.5.9 | Pièce manquante | « Dessin pas fini, chaque tour une partie est ajoutée et une autre perdue » — qu'est-ce qui est perdu exactement ? | ❓ Q2 |
-| T6.5.10 | Secret | Comme Normal, mais les dessins/phrases sont cachés pendant la partie — on dessine à l'aveugle ? | ❓ Q2 |
+| ~~T6.5.9~~ | Pièce manquante (reporté) | « Dessin pas fini, chaque tour une partie est ajoutée et une autre perdue » — qu'est-ce qui est perdu exactement ? | ❓ Q2 |
+| ~~T6.5.10~~ | Secret (reporté) | Comme Normal, mais les dessins/phrases sont cachés pendant la partie — on dessine à l'aveugle ? | ❓ Q2 |
 | T6.5.11 | Co-op | À partir d'une phrase, chaque joueur ajoute sa contribution au même dessin. | ✅ compris |
-| T6.5.12 | Score | Un point quand le sens est conservé — qui juge (vote des joueurs, l'auteur de la phrase) ? | ❓ Q2 |
-| T6.5.13 | Sandwich | Description non visible sur la capture. | ❓ Q2 |
-| T6.5.x | Autres modes après « Sandwich » | La liste continue sous la capture. | ❓ Q2 |
+| ~~T6.5.12~~ | Score (reporté) | Un point quand le sens est conservé — qui juge (vote des joueurs, l'auteur de la phrase) ? | ❓ Q2 |
+| ~~T6.5.13~~ | Sandwich (reporté) | Description non visible sur la capture. | ❓ Q2 |
+| — | Modes ❓ ci-dessus et suite de la liste | **Reportés** : non implémentés pour l'instant. | ⏸ |
 
 ### Phase 7 — Finitions
 - **T7.1** Galerie locale de mes dessins.
