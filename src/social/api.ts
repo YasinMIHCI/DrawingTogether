@@ -331,3 +331,14 @@ export async function profileStats(userId: string): Promise<ProfileStats | null>
   const s = r.data[0] as Record<string, number | string>;
   return { friends: Number(s.friends), posts: Number(s.posts), likes_given: Number(s.likes_given) };
 }
+
+export interface ProfileWithBouille extends PublicProfile {
+  bouille: unknown;
+}
+
+/** Profils avec leur Bouille (pour la place de l'accueil). */
+export async function profilesWithBouille(ids: string[]): Promise<ProfileWithBouille[]> {
+  if (!ids.length) return [];
+  const r = await (await sb()).from('profiles').select(`${PROFILE_COLS}, bouille`).in('id', ids);
+  return r.error ? [] : (r.data as ProfileWithBouille[]);
+}

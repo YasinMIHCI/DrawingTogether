@@ -60,10 +60,24 @@ export function defaultBouille(): BouilleData {
   };
 }
 
-const rnd = (n: number) => Math.floor(Math.random() * n);
-const chance = (p: number) => Math.random() < p;
+let rng: () => number = Math.random;
+const rnd = (n: number) => Math.floor(rng() * n);
+const chance = (p: number) => rng() < p;
 
-export function randomBouille(): BouilleData {
+/** Générateur pseudo-aléatoire reproductible (mêmes passants à chaque visite). */
+export function seeded(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function randomBouille(random: () => number = Math.random): BouilleData {
+  rng = random;
   const b = defaultBouille();
   const hairC = chance(0.85) ? rnd(9) : rnd(HAIR.length);
   b.face = part(rnd(COUNT.face), rnd(SKIN.length));
@@ -78,6 +92,7 @@ export function randomBouille(): BouilleData {
   b.glasses = part(chance(0.25) ? rnd(COUNT.glasses - 1) + 1 : 0, rnd(GLASS.length));
   b.mark = part(chance(0.35) ? rnd(COUNT.mark - 1) + 1 : 0);
   b.body = { h: rnd(5) - 2, w: rnd(5) - 2, c: rnd(CLOTH.length), p: rnd(PANTS.length) };
+  rng = Math.random;
   return b;
 }
 

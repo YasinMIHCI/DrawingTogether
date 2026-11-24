@@ -1,55 +1,20 @@
 <script lang="ts">
   import ProfileCard from '../components/ProfileCard.svelte';
-  import { href, type Route } from '../lib/router.svelte';
+  import Plaza from '../ui/home/Plaza.svelte';
+  import { auth } from '../social/auth.svelte';
   import { t } from '../lib/i18n/t.svelte';
-  import type { Key } from '../lib/i18n/i18n.svelte';
-
-  const modes: { route: Route; title: Key; desc: Key; color: string; icon: string }[] = [
-    { route: 'draw', title: 'home.draw.title', desc: 'home.draw.desc', color: 'var(--green-bright)',
-      icon: 'M4 20l4-1 11-11-3-3L5 16zM14 6l3 3' },
-    { route: 'shared', title: 'home.shared.title', desc: 'home.shared.desc', color: 'var(--teal)',
-      icon: 'M3 5h18v12H3zM8 21h8M7 13c2-3 4-1 6-4s3 1 4 0' },
-    { route: 'games', title: 'home.games.title', desc: 'home.games.desc', color: 'var(--sun)',
-      icon: 'M4 6h16v10H8l-4 4zM9 11h.01M12 11h.01M15 11h.01' },
-    { route: 'gallery', title: 'home.gallery.title', desc: 'home.gallery.desc', color: '#b9a6ff',
-      icon: 'M3 5h8v6H3zM13 5h8v6h-8zM3 13h8v6H3zM13 13h8v6h-8z' },
-    { route: 'feed', title: 'home.social.title', desc: 'home.social.desc', color: '#7fc8f8',
-      icon: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21c0-4 3-6 7-6s7 2 7 6M15 13h7v5h-3l-2 2v-2h-2z' },
-  ];
 </script>
 
 <main>
-  <h1 class="tagline band">{t('app.tagline')}</h1>
-  <div class="layout">
-    <div class="modes">
-      {#each modes as m (m.route)}
-        <a class="mode" href={href(m.route)} style:--c={m.color}>
-          <span class="ico">
-            <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">
-              <path d={m.icon} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </span>
-          <span class="txt">
-            <strong>{t(m.title)}</strong>
-            <span>{t(m.desc)}</span>
-          </span>
-        </a>
-      {/each}
-    </div>
-    <ProfileCard />
-  </div>
+  <h1 class="sr-only">{t('app.tagline')}</h1>
+  <Plaza />
+  {#if !auth.userId}
+    <div class="below"><ProfileCard /></div>
+  {/if}
 </main>
 
 <style>
-  main { max-width: 1040px; margin: 0 auto; padding: 8px 16px 32px; }
-  .tagline { margin: 4px 0 20px; font-size: 1.15rem; }
-  .layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; align-items: start; }
-  .modes { display: grid; gap: 14px; }
-  .mode { display: flex; gap: 16px; align-items: center; padding: 18px; text-decoration: none; background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); transition: transform 0.12s, border-color 0.12s; }
-  .mode:hover { transform: translateY(-2px); border-color: var(--c); }
-  .ico { flex: none; display: grid; place-items: center; width: 60px; height: 60px; border-radius: 16px; background: var(--c); color: #1f2430; }
-  .txt { display: grid; gap: 2px; min-width: 0; }
-  .txt strong { font-size: 1.15rem; }
-  .txt span { color: var(--ink-soft); }
-  @media (max-width: 760px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  main { max-width: 1200px; margin: 0 auto; padding: 4px 16px 24px; display: grid; gap: 16px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .below { max-width: 520px; width: 100%; justify-self: center; }
 </style>
