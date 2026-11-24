@@ -6,6 +6,9 @@
   import PostCard from '../ui/social/PostCard.svelte';
   import ShareDialog from '../ui/social/ShareDialog.svelte';
   import EmptyState from '../components/EmptyState.svelte';
+  import { themeName, themeOf, weekKey } from '../social/challenges';
+  import { settings } from '../lib/settings.svelte';
+  const theme = themeOf(weekKey());
 
   const PAGE = 20;
   let posts = $state<Post[] | null>(null);
@@ -37,6 +40,7 @@
 
 <main class="soc">
   <h1 class="band">{t('feed.title')}</h1>
+  <a class="challenge" href="#/c/defis">🏆 {t('ch.feedBanner', { theme: `${theme.icon} ${themeName(theme, settings.locale)}` })} <span>→ {t('ch.participate')}</span></a>
   <RequireAccount>
     {#if error}<p class="error">{error}</p>{/if}
     {#if posts && !posts.length}<EmptyState text={t('feed.empty')} />{/if}
@@ -59,6 +63,8 @@
 {#if sharing}<ShareDialog onclose={() => (sharing = false)} ondone={refresh} />{/if}
 
 <style>
+  .challenge { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 10px 14px; border-radius: 14px; background: #fff4cc; color: #6b4a00; font-weight: 700; text-decoration: none; border: 1px solid #f2d27a; }
+  .challenge span { font-weight: 800; }
   .list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; padding-bottom: 80px; }
   .publish {
     position: fixed; right: 0; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 30;

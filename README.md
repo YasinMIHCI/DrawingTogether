@@ -43,6 +43,7 @@ Les comptes sont **facultatifs** (pseudo + mot de passe, sans e-mail ; question 
 | [`social-2.sql`](supabase/social-2.sql) | Bouille liée au compte, publications texte, compteurs du profil |
 | [`social-3.sql`](supabase/social-3.sql) | notifications |
 | [`social-4.sql`](supabase/social-4.sql) | salons publics, favoris, signalements, modération |
+| [`social-5.sql`](supabase/social-5.sql) | défis de la semaine, humeur des publications |
 
 Pour nommer un modérateur (page « Modération » dans la barre de gauche) :
 

@@ -48,6 +48,7 @@ export const ICONS = {
   open: ['M3 6h6l2 2h10v11H3z'],
   save: ['M5 4h11l3 3v13H5z', 'M8 4v5h7V4', 'M8 20v-6h8v6'],
   export: ['M12 15V3', 'M7 8l5-5 5 5', 'M5 15v5h14v-5'],
+  share: ['M4 6h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8l-5 4v-4H4z', circle(9, 12, 1.2, true), circle(13, 12, 1.2, true)],
   import: ['M12 3v12', 'M7 10l5 5 5-5', 'M5 15v5h14v-5'],
   home: ['M4 11l8-7 8 7v9h-5v-6H9v6H4z'],
   swapColors: ['M7 7h11l-3-3', 'M17 17H6l3 3'],

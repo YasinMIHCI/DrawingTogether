@@ -10,6 +10,8 @@
   import EditorView from '../ui/EditorView.svelte';
   import NewDocDialog from '../ui/common/NewDocDialog.svelte';
   import type { FileActions } from '../ui/common/types';
+  import ShareDialog from '../ui/social/ShareDialog.svelte';
+  import { auth } from '../social/auth.svelte';
 
   const touch = screen.info.coarse;
   /** Dessin ouvert : #/draw/<id> ; sans id, le dernier dessin, sinon un nouveau. */
@@ -18,6 +20,7 @@
 
   let editor = $state.raw<Editor | null>(null);
   let showNew = $state(false);
+  let sharing = $state(false);
   let status = $state('');
 
   function makeEditor(width: number, height: number): Editor {
@@ -118,6 +121,16 @@
       if (!editor) return;
       downloadBlob(await exportImage(editor.doc, type), timestampedName('dessin', type === 'png' ? '.png' : '.jpg'));
     },
+    async share() {
+      if (!editor) return;
+      if (!auth.userId) {
+        if (confirm(t('file.shareNeedAccount'))) location.hash = href('account');
+        return;
+      }
+      // Enregistre d'abord la dernière version, puis ouvre la fenêtre de publication
+      await saveDrawing(drawingId, editor.doc);
+      sharing = true;
+    },
   };
 
   // Coller une image depuis le presse-papiers du système, sinon le presse-papiers interne
@@ -147,6 +160,9 @@
     {#key editor}
       <EditorView {editor} {files} {status} />
     {/key}
+  {/if}
+  {#if sharing}
+    <ShareDialog {drawingId} onclose={() => (sharing = false)} ondone={() => flash(t('feed.shared'))} />
   {/if}
   {#if showNew}
     <NewDocDialog oncreate={newDocument} oncancel={() => (showNew = false)} />

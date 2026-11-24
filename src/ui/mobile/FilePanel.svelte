@@ -8,7 +8,7 @@
 
   let { files, onclose }: { files: FileActions; onclose: () => void } = $props();
   const off = (k: NonNullable<FileActions['disabled']>[number]) => files.disabled?.includes(k) ?? false;
-  const items: { icon: IconName; label: Key; run: () => void; off?: boolean }[] = [
+  const items = $derived<{ icon: IconName; label: Key; run: () => void; off?: boolean }[]>([
     { icon: 'newDoc', label: 'file.new', run: () => files.newDoc(), off: off('newDoc') },
     { icon: 'open', label: 'file.open', run: () => files.open(), off: off('open') },
     { icon: 'save', label: 'file.save', run: () => files.save(), off: off('save') },
@@ -16,7 +16,8 @@
     { icon: 'export', label: 'file.exportPng', run: () => files.exportImage('png') },
     { icon: 'export', label: 'file.exportJpg', run: () => files.exportImage('jpeg') },
     { icon: 'image', label: 'file.gallery', run: () => navigate('gallery') },
-  ];
+    ...(files.share ? [{ icon: 'share' as IconName, label: 'file.share' as Key, run: () => files.share!() }] : []),
+  ]);
 </script>
 
 <div class="file">

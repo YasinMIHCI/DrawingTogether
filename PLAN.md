@@ -182,6 +182,12 @@ Choix : couleur principale verte vive (teinte propre au site), barre de navigati
 
 Ordre : T9.1–T9.2 → T10.1–T10.3 → T10.5, T9.4, T9.6 → T10.4 → T9.3 → T10.6, T9.5, T9.7, T9.9 → T9.8.
 
+### Phase 11 — Améliorations
+- ✅ **T11.1** Audit : contrastes (accessibilité), pas de débordement sur téléphone, README d'installation.
+- ✅ **T11.2** « Publier… » directement depuis l'éditeur (menu Fichier, panneau Fichier sur mobile, Ctrl+Maj+P).
+- ✅ **T11.3** Défis de la semaine dans le salon « Défis du moment » (un thème par semaine, semaines précédentes). Script `social-5.sql`.
+- ✅ **T11.4** Humeur choisie en publiant : la Bouille de l'auteur prend l'expression choisie dans le fil.
+
 ### Ordre conseillé
 `Phase 0 → Phase 1 (T1.1–T1.6) → Phase 3 (mobile) et Phase 2 (desktop) en parallèle → Phase 4 → Phase 5 → Phase 6 → reste de la Phase 1 → Phase 7`.
 Ainsi tu as très vite une appli de dessin utilisable sur téléphone, puis la toile partagée, puis les jeux.

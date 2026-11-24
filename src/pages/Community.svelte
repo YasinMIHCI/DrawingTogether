@@ -9,6 +9,7 @@
   import PostCard from '../ui/social/PostCard.svelte';
   import ShareDialog from '../ui/social/ShareDialog.svelte';
   import EmptyState from '../components/EmptyState.svelte';
+  import { daysLeft, recentWeeks, themeName, themeOf, weekKey } from '../social/challenges';
 
   /** Un salon : ses publications (visibles par tous les comptes) et le bouton Publier. */
   const PAGE = 20;
@@ -16,17 +17,29 @@
   let posts = $state<Post[] | null>(null);
   let more = $state(false);
   let sharing = $state(false);
+  // Salon « Défis » : semaine affichée (null = toutes les publications)
+  const weeks = recentWeeks(6);
+  const isChallenge = $derived(router.param === 'defis');
+  let week = $state<string | null>(weekKey());
+  const filter = () => (isChallenge && week ? { challenge: week } : {});
 
   async function load() {
     const list = await listCommunities();
     c = list?.find((x) => x.id === router.param) ?? null;
     if (!c) return;
-    const l = await feed({ community: c.id, limit: PAGE });
+    let l: Post[];
+    try {
+      l = await feed({ community: c.id, limit: PAGE, ...filter() });
+    } catch {
+      // Défis pas encore installés côté serveur (social-5.sql) : toutes les publications du salon
+      week = null;
+      l = await feed({ community: c.id, limit: PAGE });
+    }
     posts = l;
     more = l.length === PAGE;
   }
   async function loadMore() {
-    const l = await feed({ community: c!.id, limit: PAGE, before: posts?.at(-1)?.created_at });
+    const l = await feed({ community: c!.id, limit: PAGE, before: posts?.at(-1)?.created_at, ...filter() });
     posts = [...(posts ?? []), ...l];
     more = l.length === PAGE;
   }
@@ -57,7 +70,26 @@
         </div>
         <button class="fav" class:on={c.favorite} aria-pressed={c.favorite} onclick={toggleFav}>★ {c.favorite ? t('com.unfavorite') : t('com.favorite')}</button>
       </header>
-      {#if posts && !posts.length}<EmptyState text={t('com.empty')} expr="happy" seed={13} />{/if}
+      {#if isChallenge}
+        {@const th = themeOf(weeks[0])}
+        <section class="challenge panel">
+          <span class="big" aria-hidden="true">{th.icon}</span>
+          <div class="ctxt">
+            <span class="kicker">🏆 {t('ch.thisWeek')}</span>
+            <b>{themeName(th, settings.locale)}</b>
+            <span class="muted">{t('ch.left', { n: String(daysLeft()) })}</span>
+          </div>
+          <button class="btn primary" onclick={() => (sharing = true)}>{t('ch.participate')}</button>
+        </section>
+        <div class="weeks" role="tablist" aria-label={t('ch.past')}>
+          {#each weeks as w, i (w)}
+            {@const wt = themeOf(w)}
+            <button role="tab" aria-selected={week === w} onclick={() => { week = w; load(); }}>{wt.icon} {i === 0 ? t('ch.thisWeek') : themeName(wt, settings.locale)}</button>
+          {/each}
+          <button role="tab" aria-selected={week === null} onclick={() => { week = null; load(); }}>{t('ch.all')}</button>
+        </div>
+      {/if}
+      {#if posts && !posts.length}<EmptyState text={isChallenge && week ? t('ch.empty') : t('com.empty')} expr="happy" seed={13} />{/if}
       <div class="list">
         {#each posts ?? [] as p (p.id)}<PostCard post={p} ondelete={load} />{/each}
       </div>
@@ -72,7 +104,7 @@
     {t('feed.publish')}
   </button>
 {/if}
-{#if sharing && c}<ShareDialog community={c.id} onclose={() => (sharing = false)} ondone={load} />{/if}
+{#if sharing && c}<ShareDialog community={c.id} challenge={isChallenge ? weeks[0] : null} onclose={() => (sharing = false)} ondone={() => { week = isChallenge ? weeks[0] : null; load(); }} />{/if}
 
 <style>
   .head { display: flex; gap: 16px; align-items: center; padding: 14px 16px; flex-wrap: wrap; }
@@ -81,6 +113,16 @@
   .note { margin: 0; font-size: 0.8rem; color: var(--ink-soft); }
   .fav { font: inherit; font-weight: 800; padding: 8px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer; }
   .fav.on { background: #fff4cc; color: #9a6a00; border-color: #f2c94c; }
+  .challenge { display: flex; align-items: center; gap: 14px; padding: 14px 16px; flex-wrap: wrap; background: linear-gradient(120deg, #fff4cc, var(--surface) 70%); }
+  .big { font-size: 2.6rem; }
+  .ctxt { flex: 1; min-width: 160px; display: grid; }
+  .ctxt b { font-size: 1.3rem; }
+  .kicker { font-size: 0.8rem; font-weight: 800; color: #6b4a00; }
+  .challenge { color: #3a2d00; }
+  .challenge .muted { color: #6b5a2a; }
+  .weeks { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+  .weeks button { flex: none; font: inherit; font-size: 0.85rem; font-weight: 700; padding: 6px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+  .weeks [aria-selected='true'] { background: var(--green-soft); color: var(--accent-text); border-color: var(--green-bright); }
   .list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; padding-bottom: 80px; }
   .publish {
     position: fixed; right: 0; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 30;

@@ -2,15 +2,23 @@
   import { onMount } from 'svelte';
   import { createPost, listCommunities, myConversations, sendMessage, type Community, type ConversationSummary } from '../../social/api';
   import { settings } from '../../lib/settings.svelte';
+  import { parseBouille } from '../../bouille/model';
+  import { EXPRESSIONS, renderBouille, type Expression } from '../../bouille/render';
+  import { themeName, themeOf } from '../../social/challenges';
+  import type { Key } from '../../lib/i18n/i18n.svelte';
   import { drawingImage, listDrawings, loadThumb, thumbnail, type DrawingInfo } from '../../lib/gallery';
   import { Editor } from '../../engine/editor';
   import { t } from '../../lib/i18n/t.svelte';
   import SimpleEditor from '../games/SimpleEditor.svelte';
 
   /** Publier : texte, petit dessin fait sur place, ou dessin de la galerie ; dans le fil des amis et/ou des discussions. */
-  let { drawingId = null, conversation = null, community = null, onclose, ondone }: {
-    drawingId?: string | null; conversation?: string | null; community?: string | null; onclose: () => void; ondone?: (postId: string) => void;
+  let { drawingId = null, conversation = null, community = null, challenge = null, onclose, ondone }: {
+    drawingId?: string | null; conversation?: string | null; community?: string | null; challenge?: string | null;
+    onclose: () => void; ondone?: (postId: string) => void;
   } = $props();
+  let mood = $state<Expression>('neutral');
+  const myB = $derived(parseBouille(settings.bouille));
+  const theme = $derived(challenge ? themeOf(challenge) : null);
   let communities = $state<Community[]>([]);
   let room = $state<string>('');
 
@@ -67,7 +75,7 @@
         if (png) img = { png, width: 640, height: 360 };
       }
       if (mode !== 'text' && !img) throw new Error('image');
-      const id = await createPost(img?.png ?? null, img?.width ?? 0, img?.height ?? 0, title, body, room || null);
+      const id = await createPost(img?.png ?? null, img?.width ?? 0, img?.height ?? 0, { title, body, community: room || null, challenge, mood });
       for (const c of targets) await sendMessage(c, '', id);
       ondone?.(id);
       onclose();
@@ -81,6 +89,7 @@
 <div class="backdrop" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
   <div class="dialog soc" role="dialog" aria-label={t('feed.publish')}>
     <h2 class="band">{t('feed.publish')}</h2>
+    {#if theme}<p class="challenge">🏆 {t('ch.thisWeek')} : <b>{theme.icon} {themeName(theme, settings.locale)}</b></p>{/if}
     {#if !drawingId}
       <div class="modes" role="tablist">
         {#each [['text', 'feed.mode.text'], ['draw', 'feed.mode.draw'], ['gallery', 'feed.mode.gallery']] as const as [m, label] (m)}
@@ -108,6 +117,16 @@
       {/if}
     {/if}
 
+    {#if myB}
+      <div class="moods" role="radiogroup" aria-label={t('mood.title')}>
+        <span class="muted">{t('mood.title')}</span>
+        {#each EXPRESSIONS as e (e)}
+          <button role="radio" aria-checked={mood === e} title={t(`bou.expr.${e}` as Key)} aria-label={t(`bou.expr.${e}` as Key)} onclick={() => (mood = e)}>
+            {@html renderBouille(myB, { view: 'head', expr: e, viewBox: '30 50 140 130' })}
+          </button>
+        {/each}
+      </div>
+    {/if}
     <textarea bind:value={body} maxlength="1000" rows={mode === 'text' ? 5 : 2} placeholder={mode === 'text' ? t('feed.textPlaceholder') : t('feed.caption')} aria-label={t('feed.textPlaceholder')}></textarea>
 
     {#if !conversation && communities.length}
@@ -154,6 +173,11 @@
   fieldset { border: 0; padding: 6px 0 0; margin: 0; display: grid; gap: 6px; }
   summary { cursor: pointer; }
   .end { justify-content: flex-end; }
+  .challenge { margin: 0; padding: 8px 12px; border-radius: 12px; background: #fff4cc; color: #6b4a00; }
+  .moods { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .moods button { width: 46px; height: 42px; padding: 2px; border: 2px solid transparent; border-radius: 12px; background: var(--surface); cursor: pointer; }
+  .moods button[aria-checked='true'] { border-color: var(--green-bright); background: var(--green-soft); }
+  .moods :global(svg) { width: 100%; height: 100%; }
   .room { display: grid; gap: 4px; }
   .small { font-size: 0.82rem; }
 </style>

@@ -9,6 +9,8 @@ export interface PublicProfile {
   display_name: string;
   avatar_url: string | null;
   bio?: string;
+  /** Bouille (JSON) quand elle a été demandée */
+  bouille?: unknown;
 }
 
 const PROFILE_COLS = 'id, username, display_name, avatar_url';
@@ -37,11 +39,14 @@ export async function profileByUsername(username: string): Promise<PublicProfile
   return check(r) as PublicProfile | null;
 }
 
-export async function profilesByIds(ids: string[]): Promise<Map<string, PublicProfile>> {
+export async function profilesByIds(ids: string[], withBouille = false): Promise<Map<string, PublicProfile>> {
   const uniq = [...new Set(ids)].filter(Boolean);
   if (!uniq.length) return new Map();
-  const r = await (await sb()).from('profiles').select(PROFILE_COLS).in('id', uniq);
-  return new Map((check(r) as PublicProfile[]).map((p) => [p.id, p]));
+  const client = await sb();
+  const get = (cols: string) => client.from('profiles').select(cols).in('id', uniq);
+  let r = await get(withBouille ? `${PROFILE_COLS}, bouille` : PROFILE_COLS);
+  if (r.error && withBouille) r = await get(PROFILE_COLS);
+  return new Map((check(r) as unknown as PublicProfile[]).map((p) => [p.id, p]));
 }
 
 // ===================== Amis =====================
@@ -207,6 +212,10 @@ export interface Post {
   body: string;
   community_id?: string | null;
   hidden?: boolean;
+  /** Semaine du défi (« 2026-W48 ») */
+  challenge?: string | null;
+  /** Humeur choisie en publiant (expression de la Bouille) */
+  mood?: string | null;
   image_path: string | null;
   width: number;
   height: number;
@@ -218,7 +227,16 @@ export interface Post {
 }
 
 /** Publie un dessin et/ou un texte (visible par mes amis, et là où je le partage). */
-export async function createPost(png: Blob | null, width: number, height: number, title: string, body = '', community: string | null = null): Promise<string> {
+export interface PostOptions {
+  title?: string;
+  body?: string;
+  community?: string | null;
+  challenge?: string | null;
+  mood?: string | null;
+}
+export async function createPost(png: Blob | null, width: number, height: number, opt: PostOptions = {}): Promise<string> {
+  const title = opt.title ?? '';
+  const body = opt.body ?? '';
   const client = await sb();
   const id = crypto.randomUUID();
   let path: string | null = null;
@@ -229,13 +247,22 @@ export async function createPost(png: Blob | null, width: number, height: number
   }
   const row: Record<string, unknown> = { id, owner_id: me(), title: title.trim().slice(0, 80), image_path: path, width, height };
   if (body.trim()) row.body = body.trim().slice(0, 1000);
-  if (community) row.community_id = community;
-  check(await client.from('posts').insert(row));
+  if (opt.community) row.community_id = opt.community;
+  if (opt.challenge) row.challenge = opt.challenge;
+  if (opt.mood && opt.mood !== 'neutral') row.mood = opt.mood;
+  let r = await client.from('posts').insert(row);
+  // Colonnes « challenge » / « mood » absentes tant que social-5.sql n'est pas lancé : on publie sans
+  if (r.error && ('challenge' in row || 'mood' in row) && /challenge|mood|column/i.test(r.error.message)) {
+    delete row.challenge;
+    delete row.mood;
+    r = await client.from('posts').insert(row);
+  }
+  check(r);
   return id;
 }
 
 // Colonnes ajoutées par les scripts social-2 / social-4 : on se replie si elles n'existent pas encore
-const COLSETS = ['body, community_id, hidden, ', 'body, ', ''];
+const COLSETS = ['body, community_id, hidden, challenge, mood, ', 'body, community_id, hidden, ', 'body, ', ''];
 let colset = 0;
 export interface FeedOptions {
   owner?: string;
@@ -243,6 +270,7 @@ export interface FeedOptions {
   owners?: string[];
   ids?: string[];
   community?: string;
+  challenge?: string;
   limit?: number;
   before?: string;
 }
@@ -257,15 +285,20 @@ export async function feed(options: FeedOptions = {}): Promise<Post[]> {
     if (options.ids) q = q.in('id', options.ids);
     if (options.owners) q = q.in('owner_id', options.owners);
     if (options.community) q = q.eq('community_id', options.community);
+    if (options.challenge) q = q.eq('challenge', options.challenge);
     if (options.before) q = q.lt('created_at', options.before);
     return q;
   };
   let r = await run(COLSETS[colset]);
-  while (r.error && colset < COLSETS.length - 1) r = await run(COLSETS[++colset]);
+  // Repli sur moins de colonnes seulement si l'erreur vient bien d'une colonne absente du SELECT
+  // (un filtre « challenge » sur une base sans la colonne échoue aussi : on le laisse remonter)
+  while (r.error && !options.challenge && /column|does not exist|schema cache/i.test(r.error.message) && colset < COLSETS.length - 1) {
+    r = await run(COLSETS[++colset]);
+  }
   const rows = (check(r) as unknown[]).map((x) => ({ body: '', ...(x as object) })) as (Omit<Post, 'likes' | 'liked' | 'comments' | 'owner'> & {
     post_likes: { user_id: string }[]; post_comments: { count: number }[];
   })[];
-  const profiles = await profilesByIds(rows.map((r) => r.owner_id));
+  const profiles = await profilesByIds(rows.map((r) => r.owner_id), true);
   return rows.map(({ post_likes, post_comments, ...r }) => ({
     ...r,
     owner: profiles.get(r.owner_id),

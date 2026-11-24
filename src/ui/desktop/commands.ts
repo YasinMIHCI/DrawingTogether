@@ -50,6 +50,7 @@ export function createCommands(editor: Editor, files: FileActions, ui: UiHooks):
     { id: 'file.import', label: 'file.import', keys: ['Mod+Shift+O'], icon: 'import', run: () => files.importImage(), enabled: () => !off('importImage') },
     { id: 'file.exportPng', label: 'file.exportPng', keys: ['Mod+Shift+E'], icon: 'export', run: () => files.exportImage('png') },
     { id: 'file.exportJpg', label: 'file.exportJpg', icon: 'export', run: () => files.exportImage('jpeg') },
+    { id: 'file.share', label: 'file.share', keys: ['Mod+Shift+P'], icon: 'share', run: () => files.share?.(), enabled: () => !!files.share },
     { id: 'file.home', label: 'm.home', icon: 'home', run: () => navigate('home') },
     { id: 'file.gallery', label: 'file.gallery', icon: 'image', run: () => navigate('gallery') },
     // Édition

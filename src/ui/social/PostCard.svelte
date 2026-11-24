@@ -9,6 +9,10 @@
   import { parseBouille } from '../../bouille/model';
   import { renderBouille } from '../../bouille/render';
 
+  import { themeName, themeOf } from '../../social/challenges';
+  import type { Expression } from '../../bouille/render';
+
+
   // Ma Bouille sur le bouton « Ouais ! » : contente quand j'ai aimé
   const myB = $derived(parseBouille(settings.bouille));
 
@@ -22,6 +26,9 @@
     liked = post.liked;
     count = post.comments;
   });
+  // Bouille de l'auteur, avec l'humeur choisie en publiant
+  const ownerB = $derived(parseBouille(post.owner?.bouille ?? null));
+  const theme = $derived(post.challenge ? themeOf(post.challenge) : null);
   let comments = $state<Comment[] | null>(null);
   let community = $state<Community | null>(null);
   let mod = $state(false);
@@ -74,7 +81,8 @@
 <article class="post" class:compact>
   {#if !compact}
     <a class="who avatar-frame" href="#/u/{post.owner?.username}" aria-label={name}>
-      <Avatar id={0} url={post.owner?.avatar_url ?? null} size={56} />
+      {#if ownerB}<span class="ob">{@html renderBouille(ownerB, { view: 'head', expr: (post.mood ?? 'neutral') as Expression })}</span>
+      {:else}<Avatar id={0} url={post.owner?.avatar_url ?? null} size={56} />{/if}
     </a>
   {/if}
   <div class="main">
@@ -83,9 +91,10 @@
       <time datetime={post.created_at}>{relativeTime(post.created_at, settings.locale)}</time>
     </div>
     <div class="bubble">
-      {#if community || hidden}
+      {#if community || hidden || theme}
         <p class="tags">
           {#if community}<a class="com" href="#/c/{community.id}">{community.icon} {settings.locale === 'fr' ? community.name_fr : community.name_en}</a>{/if}
+          {#if theme}<a class="ch" href="#/c/defis">🏆 {theme.icon} {themeName(theme, settings.locale)}</a>{/if}
           {#if hidden}<span class="hid">{t('mod.hidden')}</span>{/if}
         </p>
       {/if}
@@ -163,6 +172,9 @@
   }
   .tags { margin: 0; display: flex; gap: 6px; flex-wrap: wrap; }
   .com { font-size: 0.8rem; font-weight: 800; color: var(--blue-text); background: color-mix(in srgb, var(--blue) 14%, transparent); padding: 2px 10px; border-radius: 9px; text-decoration: none; }
+  .ob { display: block; width: 56px; height: 56px; background: #f4efe2; border-radius: 11px; }
+  .ob :global(svg) { width: 100%; height: 100%; }
+  .ch { font-size: 0.8rem; font-weight: 800; color: #6b4a00; background: #fff4cc; padding: 2px 10px; border-radius: 9px; text-decoration: none; }
   .hid { font-size: 0.8rem; font-weight: 700; background: #ffe1dc; color: #8a1f0e; padding: 2px 8px; border-radius: 8px; }
   .rep-wrap { position: relative; }
   .count.done { color: var(--danger); }
