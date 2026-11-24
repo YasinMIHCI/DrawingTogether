@@ -3,6 +3,7 @@
   import { parseBouille, randomBouille, seeded, type BouilleData } from '../../bouille/model';
   import type { Expression } from '../../bouille/render';
   import BouilleWalk from '../../components/BouilleWalk.svelte';
+  import { GESTURE_NAMES, type GestureName } from '../../bouille/poses';
   import { feed, friendState, postImage, profilesWithBouille, type Post } from '../../social/api';
   import { auth } from '../../social/auth.svelte';
   import { settings } from '../../lib/settings.svelte';
@@ -38,6 +39,10 @@
     moving: boolean;
     next: number;
     emo: Expression;
+    /** Geste joué après un clic */
+    gesture: { name: GestureName; id: number } | null;
+    /** Numéro du déplacement en cours (les minuteries d'un déplacement interrompu n'arrêtent pas le suivant) */
+    move: number;
     bubble: Post | null;
   }
 
@@ -53,8 +58,8 @@
   function walker(key: string, b: BouilleData, name: string, extra: Partial<Walker> = {}): Walker {
     const s = spot();
     return {
-      key, b, name, ...s, dir: Math.random() < 0.5 ? 1 : -1, dur: 0, moving: false, next: Date.now() + rand(300, 4000), bubble: null,
-      emo: 'neutral', ...extra,
+      key, b, name, ...s, dir: Math.random() < 0.5 ? 1 : -1, dur: 0, moving: false, next: Date.now() + rand(1000, 6000), bubble: null,
+      emo: 'neutral', gesture: null, move: 0, ...extra,
     };
   }
 
@@ -97,7 +102,7 @@
         w.emo = EMOTES[Math.floor(Math.random() * EMOTES.length)];
         setTimeout(() => (w.emo = 'neutral'), 2200);
       }
-      if (now < w.next) continue;
+      if (now < w.next || w.gesture) continue;
       const s = spot();
       const dist = Math.hypot(s.x - w.x, (s.y - w.y) * 0.7);
       w.dur = Math.max(1.5, dist / 6);
@@ -105,9 +110,37 @@
       w.x = s.x;
       w.y = s.y;
       w.moving = true;
-      w.next = now + w.dur * 1000 + rand(1500, 6000);
-      setTimeout(() => (w.moving = false), w.dur * 1000);
+      // Des pauses un peu plus longues que les marches
+      w.next = now + w.dur * 1000 + rand(3000, 9000);
+      const move = ++w.move;
+      // Filet de sécurité si la fin de transition n'arrive pas (onglet en arrière-plan…)
+      setTimeout(() => arrive(w, move), w.dur * 1000 + 250);
     }
+  }
+
+  /** Fin du déplacement : on repasse à l'image fixe. */
+  function arrive(w: Walker, move: number) {
+    if (w.move === move) w.moving = false;
+  }
+
+  let gestureId = 0;
+  /** Clic sur une Bouille : elle s'arrête sur place et fait un geste au hasard. */
+  function poke(w: Walker, e: MouseEvent) {
+    if (reducedMotion() || w.gesture) return;
+    const node = (e.currentTarget as HTMLElement).closest('.walker') as HTMLElement | null;
+    if (w.moving && node && el) {
+      const cs = getComputedStyle(node);
+      w.x = (parseFloat(cs.left) / el.clientWidth) * 100;
+      w.y = (parseFloat(cs.top) / el.clientHeight) * 100;
+      w.dur = 0;
+      w.move++;
+      w.moving = false;
+    }
+    w.gesture = { name: GESTURE_NAMES[Math.floor(Math.random() * GESTURE_NAMES.length)], id: ++gestureId };
+  }
+  function gestureDone(w: Walker) {
+    w.gesture = null;
+    w.next = Date.now() + rand(2500, 6000);
   }
 
   async function nextBubble() {
@@ -158,7 +191,7 @@
   {#each walkers as w (w.key)}
     <div class="walker" class:moving={w.moving} class:me={w.me}
       style:left="{w.x}%" style:top="{w.y}%" style:z-index={w.bubble ? 5000 : Math.round(w.y * 10)}
-      style:transition-duration="{w.dur}s" style:--k={0.55 + w.y / 220}>
+      style:transition-duration="{w.dur}s" ontransitionend={(e) => e.target === e.currentTarget && arrive(w, w.move)} style:--k={0.55 + w.y / 220}>
       {#if w.bubble}
         <a class="bubble" class:l={w.x < 32} class:r={w.x > 68} href="#/u/{w.username}">
           <b>{w.name}</b>
@@ -167,7 +200,9 @@
         </a>
       {/if}
       {#if w.me || w.username}<span class="name">{w.name}</span>{/if}
-      <div class="body"><BouilleWalk bouille={w.b} expr={w.emo} dir={w.dir} moving={w.moving} w={96} h={126} /></div>
+      <button type="button" class="body" tabindex="-1" aria-hidden="true" onclick={(e) => poke(w, e)}>
+        <BouilleWalk bouille={w.b} expr={w.emo} dir={w.dir} moving={w.moving} gesture={w.gesture} ondone={() => gestureDone(w)} w={96} h={126} />
+      </button>
     </div>
   {/each}
 </section>
@@ -209,7 +244,11 @@
     transform-origin: 50% 100%; transition-property: left, top; transition-timing-function: linear; pointer-events: none;
   }
   .walker::before { content: ''; position: absolute; left: 14%; right: 14%; bottom: -3px; height: 8px; border-radius: 50%; background: rgba(0, 0, 0, 0.12); }
-  .body { width: 100%; height: 100%; }
+  /* Décalée vers le bas : les pieds (pas le bas de l'image, qui a une marge) touchent l'ombre */
+  .body {
+    position: relative; display: block; width: 100%; height: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit;
+    transform: translateY(6.5%); pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
   .name { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 2px; font-size: 0.7rem; font-weight: 800; background: #5d6268; color: #fff; padding: 0 6px; border-radius: 6px; white-space: nowrap; }
   .me .name { background: var(--accent); }
   .bubble {

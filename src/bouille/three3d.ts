@@ -5,6 +5,7 @@ import { CLOTH, FLAT_HEAD_BOX, GLASS, HAIR, PAINT_BOX, PAINT_SHEETS, PANTS, SKIN
 import { buildHairGeometries } from './hair3d';
 import { FACE_SHAPES, HAIR_STYLES, eyeLayout, faceOutline, renderBouille, shade, toDataUrl, type Expression, type View } from './render';
 import META from './body-meta.json';
+import type { Pose } from './poses';
 
 /**
  * Bouille en 3D (three.js). Tête et cheveux sont calculés ici (leur forme suit le dessin 2D) ;
@@ -178,42 +179,54 @@ function loadBody(): Promise<THREE.Mesh> {
 }
 
 /** Matière du corps : la couleur dépend de la zone (cou, mains, haut, bas, chaussures) d'après la pose de base ; peinture par-dessus. */
-/** Pose de marche : uniformes partagés avec le shader du corps (pivots dans le repère déformé par Grandeur / Carrure). */
-interface WalkUniforms {
-  uWalk: { value: number };
-  uPhase: { value: number };
+/** Pose du corps : uniformes partagés avec le shader (pivots dans le repère déformé par Grandeur / Carrure). */
+interface PoseUniforms {
+  uPose: { value: number };
+  uLeg: { value: THREE.Vector2 };
+  uKneeA: { value: THREE.Vector2 };
+  uArmX: { value: THREE.Vector2 };
+  uArmZ: { value: THREE.Vector2 };
   uHip: { value: number };
   uKnee: { value: number };
   uSh: { value: THREE.Vector2 };
 }
 
 /**
- * Marche sans squelette : jambes et bras pivotent (hanches, genoux, épaules) dans le shader.
+ * Poses sans squelette (marche, gestes : voir poses.ts) : jambes et bras pivotent (hanches, genoux, épaules) dans le shader.
  * Les poids viennent de la pose de base (squelette de tools/blender/build_body.py : hanches y = -1.28,
- * genoux y = -1.82, épaules y = -0.36, mains au-delà de |x| = 0.62).
+ * genoux y = -1.82, épaules y = -0.36, mains au-delà de |x| = 0.62). Angles par côté : x = gauche (x < 0), y = droite.
  */
-const WALK_GLSL = `
-uniform float uWalk; uniform float uPhase; uniform float uHip; uniform float uKnee; uniform vec2 uSh;
-vec3 walkRot(vec3 v, float py, float a, float n) {
+const POSE_GLSL = `
+uniform float uPose; uniform vec2 uLeg; uniform vec2 uKneeA; uniform vec2 uArmX; uniform vec2 uArmZ;
+uniform float uHip; uniform float uKnee; uniform vec2 uSh;
+vec3 rotX(vec3 v, float py, float a, float n) {
   vec2 q = v.yz - vec2(py * n, 0.0);
   float c = cos(a), s = sin(a);
   q = vec2(q.x * c - q.y * s, q.x * s + q.y * c);
   return vec3(v.x, q + vec2(py * n, 0.0));
 }
-vec3 walkPose(vec3 v, vec3 b, float n) {
-  if (uWalk == 0.0) return v;
+vec3 rotZ(vec3 v, vec2 p, float a, float n) {
+  vec2 q = v.xy - p * n;
+  float c = cos(a), s = sin(a);
+  q = vec2(q.x * c - q.y * s, q.x * s + q.y * c);
+  return vec3(q + p * n, v.z);
+}
+vec3 bodyPose(vec3 v, vec3 b, float n) {
+  if (uPose == 0.0) return v;
   float ax = abs(b.x);
-  float sw = sin(uPhase * 6.2832) * (b.x < 0.0 ? -1.0 : 1.0);
+  float side = b.x < 0.0 ? -1.0 : 1.0;
+  float r = step(0.0, b.x);
   float leg = smoothstep(-1.26, -1.5, b.y) * smoothstep(0.02, 0.16, ax) * (1.0 - smoothstep(0.52, 0.6, ax));
   float shin = smoothstep(-1.72, -1.9, b.y) * leg;
-  v = walkRot(v, uKnee, 0.75 * max(0.0, -sw) * shin * uWalk, n);
-  v = walkRot(v, uHip, -0.42 * sw * leg * uWalk, n);
+  v = rotX(v, uKnee, mix(uKneeA.x, uKneeA.y, r) * shin, n);
+  v = rotX(v, uHip, -mix(uLeg.x, uLeg.y, r) * leg, n);
   float arm = smoothstep(0.5, 0.64, ax) * smoothstep(-0.3, -0.6, b.y);
-  v = walkRot(v, uSh.y, 0.5 * sw * arm * uWalk, n);
+  v = rotX(v, uSh.y, mix(uArmX.x, uArmX.y, r) * arm, n);
+  v = rotZ(v, vec2(side * uSh.x, uSh.y), side * mix(uArmZ.x, uArmZ.y, r) * arm, n);
   return v;
 }`;
 
-function bodyMaterial(skin: string, shirt: string, pants: string, paint: THREE.Texture, walk: WalkUniforms): THREE.MeshStandardMaterial {
+function bodyMaterial(skin: string, shirt: string, pants: string, paint: THREE.Texture, pose: PoseUniforms): THREE.MeshStandardMaterial {
   const m = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0 });
   const z = META.zones;
   const col = (c: string) => new THREE.Color(c);
@@ -221,13 +234,13 @@ function bodyMaterial(skin: string, shirt: string, pants: string, paint: THREE.T
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, {
       uSkin: { value: col(skin) }, uNeck: { value: col(shade(skin, -0.06)) }, uShirt: { value: col(shirt) },
-      uPants: { value: col(pants) }, uShoes: { value: col('#4a3b33') }, uPaint: { value: paint }, ...walk,
+      uPants: { value: col(pants) }, uShoes: { value: col('#4a3b33') }, uPaint: { value: paint }, ...pose,
     });
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', `#include <common>\nvarying vec3 vBase;\n${WALK_GLSL}`)
-      .replace('#include <morphnormal_vertex>', '#include <morphnormal_vertex>\nobjectNormal = walkPose(objectNormal, position, 0.0);')
+      .replace('#include <common>', `#include <common>\nvarying vec3 vBase;\n${POSE_GLSL}`)
+      .replace('#include <morphnormal_vertex>', '#include <morphnormal_vertex>\nobjectNormal = bodyPose(objectNormal, position, 0.0);')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBase = position;')
-      .replace('#include <project_vertex>', 'transformed = walkPose(transformed, position, 1.0);\n#include <project_vertex>');
+      .replace('#include <project_vertex>', 'transformed = bodyPose(transformed, position, 1.0);\n#include <project_vertex>');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
 varying vec3 vBase;
@@ -328,7 +341,10 @@ export class Bouille3D {
   /** Balancement automatique (désactivé pendant la peinture). */
   idle = true;
   private shownYaw = 0;
-  private walk: WalkUniforms = { uWalk: { value: 0 }, uPhase: { value: 0 }, uHip: { value: -1.28 }, uKnee: { value: -1.82 }, uSh: { value: new THREE.Vector2(0.56, -0.36) } };
+  private poseU: PoseUniforms = {
+    uPose: { value: 0 }, uLeg: { value: new THREE.Vector2() }, uKneeA: { value: new THREE.Vector2() }, uArmX: { value: new THREE.Vector2() },
+    uArmZ: { value: new THREE.Vector2() }, uHip: { value: -1.28 }, uKnee: { value: -1.82 }, uSh: { value: new THREE.Vector2(0.56, -0.36) },
+  };
   private t0 = performance.now();
 
   constructor(private canvas: HTMLCanvasElement, animate = true) {
@@ -493,7 +509,7 @@ export class Bouille3D {
       this.char.add(this.body);
     }
     (this.body.material as THREE.Material).dispose();
-    this.body.material = bodyMaterial(skin, CLOTH[b.body.c] ?? CLOTH[0], PANTS[b.body.p] ?? PANTS[0], this.bodyTex, this.walk);
+    this.body.material = bodyMaterial(skin, CLOTH[b.body.c] ?? CLOTH[0], PANTS[b.body.p] ?? PANTS[0], this.bodyTex, this.poseU);
     const dict = this.body.morphTargetDictionary ?? {};
     const inf = this.body.morphTargetInfluences ?? [];
     const hk = b.body.h / 4;
@@ -505,9 +521,9 @@ export class Bouille3D {
     // Pivots de la marche, déplacés comme le corps par Grandeur / Carrure
     const kh = 1 + 0.48 * hk;
     const stretch = (y: number) => -META.neck + (y + META.neck) * kh;
-    this.walk.uHip.value = stretch(-1.28);
-    this.walk.uKnee.value = stretch(-1.82);
-    this.walk.uSh.value.set(0.56 * (1 + 0.4 * wk), stretch(-0.36));
+    this.poseU.uHip.value = stretch(-1.28);
+    this.poseU.uKnee.value = stretch(-1.82);
+    this.poseU.uSh.value.set(0.56 * (1 + 0.4 * wk), stretch(-0.36));
     const chinY = toY(FACE_SHAPES[b.face.s]?.[2] ?? 174);
     this.body.position.y = chinY + 0.28;
     const bottomAt = (v: number, plus: number, minus: number) => (v >= 0 ? META.bottom + (plus - META.bottom) * v : META.bottom + (minus - META.bottom) * -v);
@@ -658,39 +674,54 @@ export class Bouille3D {
     return this.canvas.toDataURL('image/png');
   }
 
+  /** Applique une pose (voir poses.ts) ; sans argument, revient à la pose de base. */
+  private applyPose(p: Pose | null, yaw: number) {
+    const u = this.poseU;
+    u.uPose.value = p ? 1 : 0;
+    u.uLeg.value.fromArray(p?.leg ?? [0, 0]);
+    u.uKneeA.value.fromArray(p?.knee ?? [0, 0]);
+    u.uArmX.value.fromArray(p?.armX ?? [0, 0]);
+    u.uArmZ.value.fromArray(p?.armZ ?? [0, 0]);
+    this.char.rotation.y = yaw + (p?.rotY ?? 0);
+    this.char.position.y = p?.y ?? 0;
+    this.headGroup.rotation.set(p?.headX ?? 0, 0, p?.headZ ?? 0);
+  }
+
   /**
-   * Planche de marche (data URL) : une ligne par rotation, `frames` images par ligne, un cycle complet de pas.
-   * Rendue une seule fois puis jouée en CSS : rien à calculer pendant que les Bouilles se baladent.
+   * Planche d'animation (data URL) : une ligne par rotation, `frames` images par ligne (t = f / frames).
+   * Rendue une seule fois puis jouée en CSS : rien à calculer pendant que les Bouilles bougent.
+   * `above` : hauteur en plus au-dessus du cadre habituel (fraction de h), pour les sauts et les bras levés ;
+   * le cadre habituel reste en bas de chaque image, à l'identique de l'image fixe.
    */
-  async walkSheet(b: BouilleData, opt: { expr: Expression; yaws: number[]; frames: number; w: number; h: number }): Promise<string> {
+  async animSheet(
+    b: BouilleData,
+    opt: { expr: Expression; yaws: number[]; frames: number; w: number; h: number; above?: number; pose: (t: number, yaw: number) => Pose },
+  ): Promise<string> {
     await this.set(b, { view: 'full', expr: opt.expr });
     const { w, h, frames, yaws } = opt;
+    const extra = Math.round(h * (opt.above ?? 0));
+    const fh = h + extra;
     this.renderer.setPixelRatio(1);
-    this.renderer.setSize(w, h, false);
+    this.renderer.setSize(w, fh, false);
     this.camera.aspect = w / h;
     this.frameCamera();
+    if (extra) this.camera.setViewOffset(w, h, 0, -extra, w, fh);
     this.renderer.setClearColor(0x000000, 0);
     const out = document.createElement('canvas');
     out.width = w * frames;
-    out.height = h * yaws.length;
+    out.height = fh * yaws.length;
     const ctx = out.getContext('2d')!;
-    this.walk.uWalk.value = 1;
     try {
       yaws.forEach((yaw, row) => {
         for (let f = 0; f < frames; f++) {
-          const a = (f / frames) * Math.PI * 2;
-          this.walk.uPhase.value = f / frames;
-          this.char.rotation.y = yaw;
-          this.char.position.y = 0.05 * Math.abs(Math.cos(a));
-          this.headGroup.rotation.z = 0.035 * Math.sin(a);
+          this.applyPose(opt.pose(f / frames, yaw), yaw);
           this.renderer.render(this.scene, this.camera);
-          ctx.drawImage(this.canvas, f * w, row * h, w, h);
+          ctx.drawImage(this.canvas, f * w, row * fh, w, fh);
         }
       });
     } finally {
-      this.walk.uWalk.value = 0;
-      this.char.position.y = 0;
-      this.headGroup.rotation.z = 0;
+      this.applyPose(null, 0);
+      this.camera.clearViewOffset();
     }
     return out.toDataURL('image/webp');
   }
