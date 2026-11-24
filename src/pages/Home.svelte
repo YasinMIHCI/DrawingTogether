@@ -5,7 +5,7 @@
   import type { Key } from '../lib/i18n/i18n.svelte';
 
   const modes: { route: Route; title: Key; desc: Key; color: string; icon: string }[] = [
-    { route: 'draw', title: 'home.draw.title', desc: 'home.draw.desc', color: 'var(--accent)',
+    { route: 'draw', title: 'home.draw.title', desc: 'home.draw.desc', color: 'var(--green-bright)',
       icon: 'M4 20l4-1 11-11-3-3L5 16zM14 6l3 3' },
     { route: 'shared', title: 'home.shared.title', desc: 'home.shared.desc', color: 'var(--teal)',
       icon: 'M3 5h18v12H3zM8 21h8M7 13c2-3 4-1 6-4s3 1 4 0' },
@@ -19,7 +19,7 @@
 </script>
 
 <main>
-  <h1 class="tagline">{t('app.tagline')}</h1>
+  <h1 class="tagline band">{t('app.tagline')}</h1>
   <div class="layout">
     <div class="modes">
       {#each modes as m (m.route)}
@@ -42,7 +42,7 @@
 
 <style>
   main { max-width: 1040px; margin: 0 auto; padding: 8px 16px 32px; }
-  .tagline { margin: 4px 0 20px; font-size: 1.25rem; font-weight: 600; color: var(--ink-soft); }
+  .tagline { margin: 4px 0 20px; font-size: 1.15rem; }
   .layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; align-items: start; }
   .modes { display: grid; gap: 14px; }
   .mode { display: flex; gap: 16px; align-items: center; padding: 18px; text-decoration: none; background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); transition: transform 0.12s, border-color 0.12s; }

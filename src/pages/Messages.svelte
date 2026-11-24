@@ -266,7 +266,7 @@
 
 <style>
   .wide { max-width: 1100px; }
-  .layout { display: grid; grid-template-columns: 320px 1fr; gap: 14px; height: calc(100dvh - 110px); min-height: 420px; }
+  .layout { display: grid; grid-template-columns: 320px 1fr; gap: 14px; height: calc(100dvh - 60px); min-height: 420px; }
   .list { overflow: auto; align-content: start; }
   .conv { text-decoration: none; }
   .conv.active { background: var(--surface-2); outline: 2px solid var(--accent); }
@@ -292,7 +292,7 @@
   .dialog { background: var(--surface); border-radius: 16px; padding: 16px; width: min(440px, 100%); max-height: 100%; overflow: auto; }
   label.person { cursor: pointer; }
   @media (max-width: 760px) {
-    .layout { grid-template-columns: 1fr; height: calc(100dvh - 100px); }
+    .layout { grid-template-columns: 1fr; height: calc(100dvh - 40px); }
     .thread-open .list { display: none; }
     .back { display: inline-flex; }
   }

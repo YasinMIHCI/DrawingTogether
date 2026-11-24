@@ -88,7 +88,7 @@
 </script>
 
 <main>
-  <h1>{t('acc.title')}</h1>
+  <h1 class="band">{t('acc.title')}</h1>
   {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if info}<p class="info" role="status">{info}</p>{/if}
 

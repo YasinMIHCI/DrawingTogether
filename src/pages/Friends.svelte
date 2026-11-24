@@ -59,7 +59,7 @@
 {/snippet}
 
 <main class="soc">
-  <h1>{t('fr.title')}</h1>
+  <h1 class="band">{t('fr.title')}</h1>
   <RequireAccount>
     {#if error}<p class="error">{error}</p>{/if}
     <section class="card">

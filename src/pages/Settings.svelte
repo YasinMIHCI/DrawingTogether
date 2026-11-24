@@ -14,7 +14,7 @@
 </script>
 
 <main>
-  <h1>{t('settings.title')}</h1>
+  <h1 class="band">{t('settings.title')}</h1>
 
   <section>
     <h2>{t('settings.language')}</h2>

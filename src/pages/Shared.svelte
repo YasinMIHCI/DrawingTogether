@@ -238,7 +238,7 @@
   </div>
 {:else}
 <main>
-  <h1>{t('shared.title')}</h1>
+  <h1 class="band">{t('shared.title')}</h1>
 
   {#if !network.online}<p class="error" role="status">{t('offline.notice')}</p>{/if}
   {#if error}<p class="error" role="alert">{error}</p>{/if}

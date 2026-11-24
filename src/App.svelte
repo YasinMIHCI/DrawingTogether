@@ -1,6 +1,6 @@
 <script lang="ts">
   import { fade } from 'svelte/transition';
-  import TopBar from './components/TopBar.svelte';
+  import Sidebar from './components/Sidebar.svelte';
   import Home from './pages/Home.svelte';
   import { router } from './lib/router.svelte';
   import { settings } from './lib/settings.svelte';
@@ -32,6 +32,7 @@
     feed: () => import('./pages/Feed.svelte'),
     u: () => import('./pages/Profile.svelte'),
   } as const;
+  const chrome = $derived(router.route !== 'draw' && !appChrome.fullscreen);
   const loader = $derived(router.route === 'home' ? null : pages[router.route]());
 
   $effect(() => {
@@ -44,9 +45,9 @@
   });
 </script>
 
-{#if router.route !== 'draw' && !appChrome.fullscreen}<TopBar />{/if}
+{#if chrome}<Sidebar />{/if}
 {#key router.route === 'draw' || router.route === 'u' ? `${router.route}/${router.param}` : router.route}
-  <div class="page" in:fade={{ duration: reducedMotion() ? 0 : 160 }}>
+  <div class="page" class:chrome class:tiled-bg={chrome} in:fade={{ duration: reducedMotion() ? 0 : 160 }}>
     {#if loader}
       {#await loader then mod}
         <mod.default />
@@ -59,4 +60,5 @@
 
 <style>
   .page { display: block; }
+  .page.chrome { margin-left: var(--side-w); min-height: 100dvh; padding-top: max(12px, env(safe-area-inset-top)); }
 </style>

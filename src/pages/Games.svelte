@@ -93,7 +93,7 @@
   {:else if view === 'room' && room}
     {#key room}<GameRoom {room} onleave={exit} />{/key}
   {:else}
-    <h1>{t('games.title')}</h1>
+    <h1 class="band">{t('games.title')}</h1>
     <p class="intro">{t('games.intro')}</p>
     {#if !hasNickname}<ProfileCard />{/if}
     <div class="cols">

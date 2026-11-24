@@ -49,7 +49,7 @@
 <main>
   <header>
     <div>
-      <h1>{t('gallery.title')}</h1>
+      <h1 class="band">{t('gallery.title')}</h1>
       <p class="muted">{t('gallery.intro')}</p>
     </div>
     <div class="actions">
