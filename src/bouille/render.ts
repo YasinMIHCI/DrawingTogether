@@ -1,4 +1,4 @@
-import { CLOTH, EYE, GLASS, HAIR, LIP, PAINT_BOX, PANTS, SKIN, isSafePaint, type BouilleData, type Category, type Part } from './model';
+import { CLOTH, EYE, GLASS, FLAT_HEAD_BOX, HAIR, LIP, PAINT_BOX, PANTS, SKIN, isSafePaint, type BouilleData, type Category, type Part } from './model';
 
 /**
  * Dessin d'une Bouille en SVG (chaîne). Repère : tête centrée en (100, 100), crâne de 38 à 162 en x,
@@ -459,6 +459,11 @@ export function renderBouille(b: BouilleData, opt: RenderOptions = {}): string {
   if (!fo && (!only || only === 'hair')) parts.push(`<g transform="translate(${turn * 3} 0) ${flip}">${hair.front}</g>`);
   if (!fo && show('glasses')) parts.push(`<g transform="translate(${100 + tx} ${glassY}) scale(${k(b.glasses.z)})">${glasses(b.glasses.s, GLASS[b.glasses.c] ?? GLASS[0], eyeDx / k(b.glasses.z))}</g>`);
 
+  // Calque plat du visage : posé par-dessus tout, il peut dépasser de la tête
+  if (!fo && b.flatFace && isSafePaint(b.flatFace) && (!only || only === 'face')) {
+    const f = FLAT_HEAD_BOX;
+    parts.push(`<image href="${b.flatFace}" x="${f.x}" y="${f.y}" width="${f.s}" height="${f.s}" preserveAspectRatio="none" style="image-rendering:pixelated"/>`);
+  }
   let vb: string;
   if (fo) vb = '0 0 200 200';
   else if (opt.viewBox) vb = opt.viewBox;
@@ -473,7 +478,10 @@ export function renderBouille(b: BouilleData, opt: RenderOptions = {}): string {
 /** Image PNG (fond transparent ou coloré) d'une Bouille, pour l'avatar du compte. */
 export async function bouillePng(b: BouilleData, size = 256, background: string | null = null, view: View = 'bust', expr: Expression = 'neutral'): Promise<Blob> {
   // Une image SVG ouverte comme <img> ne charge rien d'extérieur : la peinture doit être intégrée
-  if (b.paint?.startsWith('https:')) b = { ...b, paint: await toDataUrl(b.paint).catch(() => undefined) };
+  for (const k of ['paint', 'flatFace'] as const) {
+    const v = b[k];
+    if (v?.startsWith('https:')) b = { ...b, [k]: await toDataUrl(v).catch(() => undefined) };
+  }
   const svg = renderBouille(b, { view, expr }).replace('width="100%" height="100%"', `width="${size}" height="${size}"`);
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
   try {

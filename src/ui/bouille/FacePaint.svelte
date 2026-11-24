@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { PAINT_BOX, PAINT_SHEETS, parseBouille, type BouilleData, type PaintSheet } from '../../bouille/model';
+  import { FLAT_HEAD_BOX, PAINT_BOX, PAINT_SHEETS, parseBouille, type BouilleData, type PaintSheet } from '../../bouille/model';
   import { renderBouille, toDataUrl } from '../../bouille/render';
   import { friendState, profilesWithBouille } from '../../social/api';
   import { auth } from '../../social/auth.svelte';
@@ -32,7 +32,12 @@
   let friends = $state<{ name: string; b: BouilleData }[] | null>(null);
   let showFriends = $state(false);
 
-  const background = $derived(renderBouille({ ...bouille, paint: undefined }, { only: 'face', noPaint: true, viewBox: `${PAINT_BOX.x} ${PAINT_BOX.y} ${PAINT_BOX.s} ${PAINT_BOX.s}` }));
+  const flatHead = info.key === 'flatFace' || info.key === 'flatHead';
+  const background = $derived(
+    flatHead
+      ? renderBouille({ ...bouille, flatFace: undefined }, { view: 'head', viewBox: `${FLAT_HEAD_BOX.x} ${FLAT_HEAD_BOX.y} ${FLAT_HEAD_BOX.s} ${FLAT_HEAD_BOX.s}` })
+      : renderBouille({ ...bouille, paint: undefined }, { only: 'face', noPaint: true, viewBox: `${PAINT_BOX.x} ${PAINT_BOX.y} ${PAINT_BOX.s} ${PAINT_BOX.s}` }),
+  );
   const isFace = info.key === 'paint';
   const preview = $derived(isFace ? renderBouille({ ...bouille, paint: current }, { view: 'head' }) : '');
 

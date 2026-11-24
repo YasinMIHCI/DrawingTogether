@@ -1,4 +1,5 @@
 import { getSupabase } from '../net/supabase';
+import { PAINT_SHEETS } from '../bouille/model';
 import { settings } from '../lib/settings.svelte';
 import { accountEmail, isValidUsername, MIN_PASSWORD, normalizeUsername } from './username';
 
@@ -210,7 +211,7 @@ export async function saveBouille(json: string, png: Blob): Promise<string> {
   if (!auth.userId) return json;
   // La peinture du visage (data URL) part dans le stockage ; le JSON garde son adresse
   const data = JSON.parse(json) as Record<string, unknown>;
-  const sheets = [['paint', 'paint.png'], ['paintHead', 'paint-head.png'], ['paintBody', 'paint-body.png'], ['paintBack', 'paint-back.png']];
+  const sheets = Object.values(PAINT_SHEETS).map((s) => [s.key, s.file]);
   for (const [key, file] of sheets) {
     const v = data[key];
     if (typeof v !== 'string' || !v.startsWith('data:')) continue;

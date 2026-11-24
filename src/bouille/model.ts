@@ -29,7 +29,15 @@ export interface BouilleData {
   paintHead?: string;
   paintBody?: string;
   paintBack?: string;
+  /** Calques plats (« feuilles » posées devant / derrière la tête et le corps) : le dessin peut dépasser de la silhouette */
+  flatFace?: string;
+  flatHead?: string;
+  flatBody?: string;
+  flatBack?: string;
 }
+
+/** Cadre des calques de la tête (repère 2D) : déborde largement autour de la tête. */
+export const FLAT_HEAD_BOX = { x: -30, y: -40, s: 260 } as const;
 
 /** Les 4 feuilles de peinture : champ de la Bouille, taille en pixels, nom du fichier en ligne. */
 export const PAINT_SHEETS = {
@@ -37,6 +45,10 @@ export const PAINT_SHEETS = {
   head: { key: 'paintHead', w: 128, h: 128, file: 'paint-head.png' },
   body: { key: 'paintBody', w: 128, h: 208, file: 'paint-body.png' },
   back: { key: 'paintBack', w: 128, h: 208, file: 'paint-back.png' },
+  flatFace: { key: 'flatFace', w: 160, h: 160, file: 'flat-face.png' },
+  flatHead: { key: 'flatHead', w: 160, h: 160, file: 'flat-head.png' },
+  flatBody: { key: 'flatBody', w: 160, h: 208, file: 'flat-body.png' },
+  flatBack: { key: 'flatBack', w: 160, h: 208, file: 'flat-back.png' },
 } as const;
 export type PaintSheet = keyof typeof PAINT_SHEETS;
 

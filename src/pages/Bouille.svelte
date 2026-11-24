@@ -63,9 +63,19 @@
   let mirror3d = $state(false);
   let undo3d: Record<PaintSheet, ImageData>[] = [];
   const SHEETS: PaintSheet[] = ['face', 'head', 'body', 'back'];
+  const ALL_SHEETS = Object.keys(PAINT_SHEETS) as PaintSheet[];
   const brush3d = $derived<Brush | null>(painting3d ? { color: eraser3d ? null : color3d, size: size3d, mirror: mirror3d } : null);
-  function openSheet(k: PaintSheet, method: '2d' | '3d') {
+  const FLAT: Record<string, PaintSheet> = { face: 'flatFace', head: 'flatHead', body: 'flatBody', back: 'flatBack' };
+  function openSheet(k: PaintSheet, method: '2d' | '3d' | 'skin') {
     choosing = false;
+    if (method === '2d') {
+      // Calque plat façon « feuille » : le dessin peut dépasser de la Bouille
+      const f = FLAT[k];
+      sheet = f;
+      guide = engine ? engine.guide(f as 'flatFace') : null;
+      painting = true;
+      return;
+    }
     if (method === '3d') {
       mode3d = true;
       if (k === 'head' || k === 'back') yaw = Math.PI;
@@ -79,6 +89,7 @@
     guide = (k === 'body' || k === 'back') && engine ? engine.guide(k) : null;
     painting = true;
   }
+  const hasPaint = (k: PaintSheet) => !!(b as unknown as Record<string, string>)[PAINT_SHEETS[k].key] || !!(b as unknown as Record<string, string>)[PAINT_SHEETS[FLAT[k]].key];
   function snapshot3d() {
     if (!engine) return;
     const snap = {} as Record<PaintSheet, ImageData>;
@@ -197,7 +208,7 @@
   const range = (k: 'z' | 'y' | 'x' | 'r') => RANGE[k];
 </script>
 
-<div class="maker">
+<div class="maker" class:paint3d={painting3d}>
   <header class="bar">
     <button class="tool" onclick={undo} disabled={!past.length} title={t('bou.undo')} aria-label={t('bou.undo')}>
       <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
@@ -397,6 +408,14 @@
   .exprs button { width: 48px; height: 44px; padding: 2px; border: 0; border-radius: 12px; background: #fff; cursor: pointer; box-shadow: 0 3px 0 rgba(0, 0, 0, 0.1); }
   .exprs button.on { background: var(--orange); }
   .exprs :global(svg) { width: 100%; height: 100%; background: #fff; border-radius: 9px; }
+  /* Peinture 3D : seulement la Bouille et la barre d'outils, en plein écran */
+  .paint3d .bar, .paint3d .panel-side, .paint3d .exprs, .paint3d .reset, .paint3d .hint { display: none !important; }
+  .paint3d { grid-template-columns: 1fr !important; grid-template-rows: 1fr !important; }
+  .paint3d .stage { padding: 0 !important; grid-template-rows: 1fr !important; }
+  .paint3d .preview { border: 0; border-radius: 0; }
+  .paint3d .p3d { left: 6px; right: 6px; bottom: max(6px, env(safe-area-inset-bottom)); padding: 6px; }
+  .paint3d .p3d-row:first-child { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .paint3d .sw3 { flex: none; }
   .p3d { position: absolute; left: 10px; right: 10px; bottom: 10px; display: grid; gap: 6px; padding: 8px; border-radius: 16px; background: rgba(255, 255, 255, 0.92); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15); }
   .preview { position: relative; }
   .p3d-row { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
@@ -411,10 +430,12 @@
   .b3.txt { padding: 0 12px; }
   .b3.ok { background: linear-gradient(#f6a83a, var(--orange)); color: #fff; }
   .p3d .grow { flex: 1; }
-  .chooser-bg { position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.4); display: grid; place-items: center; padding: 12px; }
-  .chooser { background: #f7edd5; color: var(--ink-b); border-radius: 22px; padding: 16px; width: min(520px, 100%); display: grid; gap: 10px; }
+  .chooser-bg { --orange: #f28c1d; --ink-b: #2c2a33; position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.4); display: grid; place-items: center; padding: 12px; }
+  .chooser { background: #f7edd5; color: var(--ink-b); border-radius: 22px; padding: 16px; width: min(560px, 100%); max-height: 100%; overflow: auto; display: grid; gap: 10px; }
+  .chooser .act.primary { background: linear-gradient(#f6a83a, var(--orange)); color: #fff; }
   .chooser h2 { margin: 0; }
   .zone-row { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; background: #fff; padding: 8px 10px; border-radius: 14px; }
+  .zone-row .link { grid-column: 2 / -1; justify-self: end; border: 0; background: none; font: inherit; font-size: 0.8rem; color: #8a6a2a; text-decoration: underline; cursor: pointer; padding: 0; }
   @media (max-width: 480px) { .zone-row { grid-template-columns: 1fr 1fr; } .zone-row b { grid-column: 1 / -1; } }
   .paint-row { display: flex; gap: 8px; flex-wrap: wrap; }
   .act { border: 0; border-radius: 14px; padding: 10px 16px; font: inherit; font-weight: 800; background: #fff; color: var(--ink-b); box-shadow: 0 3px 0 rgba(0, 0, 0, 0.1); cursor: pointer; }
@@ -485,13 +506,14 @@
 {#if choosing}
   <div class="chooser-bg" role="presentation" onclick={(e) => e.target === e.currentTarget && (choosing = false)}>
     <div class="chooser" role="dialog" aria-label={t('paint.title')}>
-      <h2>🖌 {t('paint.title')}</h2>
+      <h2>🖌 {t('bou.cat.paint')}</h2>
       <p class="note">{t('paint.choose')}</p>
       {#each SHEETS as k (k)}
         <div class="zone-row">
-          <b>{t(`paint.sheet.${k}` as Key)}{(b as unknown as Record<string, string>)[PAINT_SHEETS[k].key] ? ' ✓' : ''}</b>
+          <b>{t(`paint.sheet.${k}` as Key)}{hasPaint(k) ? ' ✓' : ''}</b>
           <button class="act" onclick={() => openSheet(k, '2d')}>📄 {t('paint.sheet2d')}</button>
           <button class="act primary" onclick={() => openSheet(k, '3d')}>🧊 {t('paint.on3d')}</button>
+          <button class="link" onclick={() => openSheet(k, 'skin')}>{t('paint.skin2d')}</button>
         </div>
       {/each}
       <button class="act" onclick={() => (choosing = false)}>{t('acc.cancel')}</button>

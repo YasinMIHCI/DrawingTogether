@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { CLOTH, GLASS, HAIR, PAINT_BOX, PAINT_SHEETS, PANTS, SKIN, type BouilleData, type PaintSheet } from './model';
+import { CLOTH, FLAT_HEAD_BOX, GLASS, HAIR, PAINT_BOX, PAINT_SHEETS, PANTS, SKIN, type BouilleData, type PaintSheet } from './model';
+import { buildHairGeometries } from './hair3d';
 import { FACE_SHAPES, HAIR_STYLES, eyeLayout, faceOutline, renderBouille, shade, toDataUrl, type Expression, type View } from './render';
 import META from './body-meta.json';
 
@@ -112,63 +113,23 @@ function addMesh(parent: THREE.Object3D, geo: THREE.BufferGeometry, material: TH
   return m;
 }
 
-// ---------- Cheveux ----------
-
-type Cap = (typeof HAIR_STYLES)[number][0];
-/** Bord avant des cheveux (px du dessin 2D) selon x, pour chaque type de frange. */
-function frontEdge(cap: NonNullable<Cap>, xs: number): number {
-  const t = Math.min(1, Math.max(0, (xs - 38) / 124));
-  const d = Math.abs(xs - 100);
-  switch (cap) {
-    case 'bowl': return 70;
-    case 'swept': case 'curly': return 58 + 30 * (1 - t) ** 1.8;
-    case 'part': return 52 + d * 0.32;
-    case 'curtain': return 54 + (1 - d / 62) * 4 + d * 0.38;
-    case 'spiky': return 64 + 7 * Math.abs(Math.sin(xs / 7));
-    case 'slick': return 44;
-    case 'fringe': return 84 + 3 * Math.abs(Math.sin(xs / 5));
-    case 'buzz': return 50;
-    default: return 60;
-  }
-}
+// ---------- Cheveux (voir hair3d.ts) ----------
 
 function buildHair(root: THREE.Object3D, b: BouilleData) {
   const [cap, back] = HAIR_STYLES[b.hair.s] ?? HAIR_STYLES[0];
-  if (!cap && !back) return;
-  const color = HAIR[b.hair.c] ?? HAIR[0];
-  const m = new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: 0.42, metalness: 0, side: THREE.DoubleSide });
-  const flip = b.hair.f ? -1 : 1;
+  const geos = buildHairGeometries(cap, back, b.face.s);
+  if (!geos.length) return;
+  const color = new THREE.Color(HAIR[b.hair.c] ?? HAIR[0]);
+  const m = new THREE.MeshPhysicalMaterial({ color, roughness: 0.42, metalness: 0, sheen: 0.6, sheenRoughness: 0.4, sheenColor: color.clone().lerp(new THREE.Color('#ffffff'), 0.35), side: THREE.FrontSide });
   const group = new THREE.Group();
-  group.scale.x = flip;
+  if (b.hair.f) group.scale.x = -1;
   root.add(group);
-  if (cap && cap !== 'mohawk') {
-    const nape = back ? 128 : 120;
-    const edge = (xs: number, bk: number) => {
-      const side = Math.min(1, Math.abs(xs - 100) / 58) ** 5;
-      const f = frontEdge(cap, xs) * (1 - side) + 106 * side;
-      return f * (1 - bk) + nape * bk;
-    };
-    const grow = cap === 'buzz' ? 1.025 : cap === 'curly' ? 1.1 : 1.075;
-    addMesh(group, shellGeometry(b.face.s, grow, edge), m);
-    if (cap === 'curly' || cap === 'spiky') {
-      // Volume : boucles ou pointes sur le dessus
-      for (let i = 0; i < 9; i++) {
-        const a = -Math.PI * 0.85 + (i / 8) * Math.PI * 0.7;
-        const p: [number, number, number] = [Math.cos(a) * 0.95, 1.1 + Math.sin(-a) * 0.15, Math.sin(a) * 0.3 - 0.1];
-        if (cap === 'curly') addMesh(group, new THREE.SphereGeometry(0.28, 16, 12), m, p);
-        else addMesh(group, new THREE.ConeGeometry(0.2, 0.5, 12), m, [p[0] * 0.8, 1.35, p[2]], undefined, [0, 0, -p[0] * 0.5]);
-      }
-    }
+  for (const g of geos) {
+    const mesh = new THREE.Mesh(g, m);
+    if (b.hair.f) g.scale(1, 1, 1);
+    group.add(mesh);
   }
-  if (cap === 'mohawk') addMesh(group, new THREE.CapsuleGeometry(0.16, 1.2, 8, 16), m, [0, 1.15, -0.1], [1, 1, 2.2], [Math.PI / 2, 0, 0]);
-  if (back === 'bob' || back === 'shoulder' || back === 'long') {
-    const len = back === 'bob' ? 0.9 : back === 'shoulder' ? 1.5 : 2.3;
-    addMesh(group, new THREE.CapsuleGeometry(0.95, len, 10, 32), m, [0, toY(92) - len / 2, -0.3], [1.14, 1, 0.72]);
-  } else if (back === 'bun') addMesh(group, new THREE.SphereGeometry(0.36, 24, 16), m, [0, toY(12), -0.25]);
-  else if (back === 'buns') for (const x of [-0.82, 0.82]) addMesh(group, new THREE.SphereGeometry(0.33, 24, 16), m, [x, toY(36), -0.15]);
-  else if (back === 'tails') for (const x of [-1.08, 1.08]) addMesh(group, new THREE.CapsuleGeometry(0.22, 1.4, 8, 16), m, [x, toY(140), -0.2], undefined, [0, 0, x * 0.1]);
-  else if (back === 'pony') addMesh(group, new THREE.CapsuleGeometry(0.25, 1.3, 8, 16), m, [0, toY(120), -1.0], undefined, [0.35, 0, 0]);
-  else if (back === 'afro') addMesh(group, new THREE.SphereGeometry(1.5, 32, 24), m, [0, toY(80), -0.2], [1, 0.95, 0.88]);
+  if (b.hair.f) m.side = THREE.DoubleSide; // miroir : faces retournées
 }
 
 // ---------- Lunettes ----------
@@ -314,6 +275,7 @@ export class Bouille3D {
   private frame = 0;
   private bottom = -4;
   private view: View = 'bust';
+  private topY = 1.45;
   private bouille: BouilleData | null = null;
   private featuresImg: HTMLImageElement | null = null;
   private headCanvas = document.createElement('canvas');
@@ -321,6 +283,8 @@ export class Bouille3D {
   private headTex: THREE.CanvasTexture;
   private bodyTex: THREE.CanvasTexture;
   private ray = new THREE.Raycaster();
+  /** Calques plats (devant / derrière la tête et le corps) */
+  private flats = {} as Record<'flatFace' | 'flatHead' | 'flatBody' | 'flatBack', { mesh: THREE.Mesh; tex: THREE.CanvasTexture }>;
   sheets = new PaintSheets();
   /** Rotation (radians) autour de l'axe vertical. */
   yaw = 0;
@@ -356,6 +320,31 @@ export class Bouille3D {
     this.bodyTex.flipY = false; // les UV glTF ont l'origine en haut
     this.scene.add(this.char);
     this.char.add(this.headGroup);
+    // Calques : plans transparents (pixels nets), dessin visible seulement côté extérieur
+    const fh = FLAT_HEAD_BOX;
+    const headSize = fh.s / S;
+    const headCenterY = toY(fh.y + fh.s / 2);
+    for (const k of ['flatFace', 'flatHead', 'flatBody', 'flatBack'] as const) {
+      const tex = new THREE.CanvasTexture(this.sheets.canvases[k]);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.magFilter = THREE.NearestFilter;
+      tex.minFilter = THREE.LinearFilter;
+      const m = new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.5, roughness: 0.8 });
+      const head = k === 'flatFace' || k === 'flatHead';
+      const box = META.box;
+      const geo = head ? new THREE.PlaneGeometry(headSize, headSize) : new THREE.PlaneGeometry((box.x1 - box.x0) * 1.4, (box.z1 - box.z0) * 1.1);
+      const mesh = new THREE.Mesh(geo, m);
+      const back = k === 'flatHead' || k === 'flatBack';
+      if (back) mesh.rotation.y = Math.PI;
+      if (head) {
+        mesh.position.set(0, headCenterY, back ? -1.08 : 1.02);
+        this.headGroup.add(mesh);
+      } else {
+        mesh.position.set(0, 0, back ? -0.5 : 0.5);
+        this.char.add(mesh);
+      }
+      this.flats[k] = { mesh, tex };
+    }
     const loop = () => {
       this.frame = requestAnimationFrame(loop);
       this.tick();
@@ -371,7 +360,7 @@ export class Bouille3D {
 
   private frameCamera() {
     const full = this.view === 'full';
-    const top = 1.45;
+    const top = this.topY;
     const bottom = full ? this.bottom - 0.05 : -2.1;
     const h = top - bottom;
     const mid = (top + bottom) / 2;
@@ -433,6 +422,7 @@ export class Bouille3D {
     c.drawImage(this.sheets.canvases.body, 0, 0, BODY_TEX.w, BODY_TEX.h);
     c.drawImage(this.sheets.canvases.back, BODY_TEX.w, 0, BODY_TEX.w, BODY_TEX.h);
     this.bodyTex.needsUpdate = true;
+    for (const f of Object.values(this.flats)) f.tex.needsUpdate = true;
   }
 
   /** Reconstruit le personnage (rapide) ; les images (traits, peintures, corps) se chargent en parallèle. */
@@ -443,7 +433,10 @@ export class Bouille3D {
     if (seq !== this.seq) return;
     this.bouille = b;
     this.featuresImg = img;
+    this.topY = b.flatFace || b.flatHead ? 2.3 : 1.45;
+    const keep = new Set<THREE.Object3D>(Object.values(this.flats).map((f) => f.mesh));
     for (const o of [...this.headGroup.children]) {
+      if (keep.has(o)) continue;
       this.headGroup.remove(o);
       this.dispose3D(o);
     }
@@ -472,6 +465,15 @@ export class Bouille3D {
     this.body.position.y = chinY + 0.28;
     const bottomAt = (v: number, plus: number, minus: number) => (v >= 0 ? META.bottom + (plus - META.bottom) * v : META.bottom + (minus - META.bottom) * -v);
     this.bottom = this.body.position.y + bottomAt(hk, META.variants.tall.bottom, META.variants.short.bottom);
+    // Calques du corps : alignés sur le corps (cadre = feuille de peinture élargie)
+    const box = META.box;
+    for (const k of ['flatBody', 'flatBack'] as const) {
+      const m = this.flats[k].mesh;
+      const hgt = (box.z1 - box.z0) * 1.1;
+      const sy = 1 + Math.max(-0.48, b.body.h * 0.12);
+      m.scale.set(1 + b.body.w * 0.05, sy, 1);
+      m.position.y = this.body.position.y + 0.25 - (hgt * sy) / 2;
+    }
     this.composite();
     this.frameCamera();
   }
@@ -540,28 +542,46 @@ export class Bouille3D {
     this.composite();
   }
 
-  /** Image du corps vu de face ou de dos, cadrée comme la feuille de peinture (fond du dessin 2D). */
-  guide(sheet: 'body' | 'back'): string {
+  /** Image de la Bouille cadrée comme une feuille (fond du dessin 2D) : peinture du corps ou calques. */
+  guide(sheet: 'body' | 'back' | 'flatFace' | 'flatHead' | 'flatBody' | 'flatBack'): string {
     const s = PAINT_SHEETS[sheet];
     const box = META.box;
-    const cam = new THREE.OrthographicCamera(box.x0, box.x1, box.z1, box.z0, 0.1, 20);
+    const head = sheet === 'flatFace' || sheet === 'flatHead';
+    const back = sheet === 'back' || sheet === 'flatHead' || sheet === 'flatBack';
     const by = this.body?.position.y ?? 0;
-    cam.position.set(0, by, sheet === 'body' ? 8 : -8);
-    cam.lookAt(0, by, 0);
-    cam.position.y = by;
-    cam.top = box.z1;
-    cam.bottom = box.z0;
+    let cam: THREE.OrthographicCamera;
+    if (head) {
+      const f = FLAT_HEAD_BOX;
+      cam = new THREE.OrthographicCamera(-f.s / 2 / S, f.s / 2 / S, toY(f.y), toY(f.y + f.s), 0.1, 20);
+    } else if (sheet === 'flatBody' || sheet === 'flatBack') {
+      const m = this.flats[sheet].mesh;
+      const w = ((box.x1 - box.x0) * 1.4 * m.scale.x) / 2;
+      const h = ((box.z1 - box.z0) * 1.1 * m.scale.y) / 2;
+      cam = new THREE.OrthographicCamera(-w, w, m.position.y + h, m.position.y - h, 0.1, 20);
+    } else {
+      cam = new THREE.OrthographicCamera(box.x0, box.x1, by + box.z1, by + box.z0, 0.1, 20);
+    }
+    cam.position.set(0, 0, back ? -8 : 8);
+    cam.lookAt(0, 0, back ? -9 : 9);
+    cam.lookAt(0, 0, 0);
     cam.updateProjectionMatrix();
-    const saved = { yaw: this.char.rotation.y, head: this.headGroup.visible, size: this.renderer.getSize(new THREE.Vector2()), pr: this.renderer.getPixelRatio(), morph: [...(this.body?.morphTargetInfluences ?? [])] };
+    const saved = {
+      head: this.headGroup.visible, body: this.body?.visible ?? true, size: this.renderer.getSize(new THREE.Vector2()), pr: this.renderer.getPixelRatio(),
+      morph: [...(this.body?.morphTargetInfluences ?? [])], flats: Object.values(this.flats).map((f) => f.mesh.visible),
+    };
     this.char.rotation.y = 0;
     this.char.position.y = 0;
-    this.headGroup.visible = false;
-    if (this.body?.morphTargetInfluences) this.body.morphTargetInfluences.fill(0);
+    for (const f of Object.values(this.flats)) f.mesh.visible = false;
+    if (sheet === 'body' || sheet === 'back') {
+      this.headGroup.visible = false;
+      if (this.body?.morphTargetInfluences) this.body.morphTargetInfluences.fill(0);
+    }
     this.renderer.setPixelRatio(1);
-    this.renderer.setSize(s.w * 2, s.h * 2, false);
+    this.renderer.setSize(s.w * 3, s.h * 3, false);
     this.renderer.render(this.scene, cam);
     const url = this.canvas.toDataURL('image/png');
     this.headGroup.visible = saved.head;
+    Object.values(this.flats).forEach((f, i) => (f.mesh.visible = saved.flats[i]));
     if (this.body?.morphTargetInfluences) saved.morph.forEach((v, i) => (this.body!.morphTargetInfluences![i] = v));
     this.renderer.setPixelRatio(saved.pr);
     this.renderer.setSize(saved.size.x, saved.size.y, false);
