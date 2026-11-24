@@ -1,5 +1,5 @@
 import type { BlendMode } from '../engine/layers';
-import { SUPABASE_KEY, SUPABASE_URL } from './config';
+import { getSupabase } from './supabase';
 
 export const BUCKET = 'shared-canvases';
 
@@ -74,8 +74,5 @@ function isNotFound(error: unknown): boolean {
 }
 
 async function storage() {
-  const { createClient } = await import('@supabase/supabase-js');
-  client ??= createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-  return client.storage.from(BUCKET);
+  return (await getSupabase()).storage.from(BUCKET);
 }
-let client: import('@supabase/supabase-js').SupabaseClient | null = null;

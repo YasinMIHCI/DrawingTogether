@@ -8,6 +8,11 @@
   import { href } from '../lib/router.svelte';
   import { settings } from '../lib/settings.svelte';
   import { t } from '../lib/i18n/t.svelte';
+  import { auth } from '../social/auth.svelte';
+  import ShareDialog from '../ui/social/ShareDialog.svelte';
+
+  let sharing = $state<string | null>(null);
+  let shared = $state(false);
 
   let list = $state<DrawingInfo[] | null>(null);
   let thumbs = $state<Record<string, string>>({});
@@ -73,6 +78,7 @@
           <span class="muted small">{d.width} × {d.height} · {t('gallery.edited', { date: date(d.updatedAt) })}</span>
           <div class="row">
             <button class="mini" onclick={() => (renaming = d.id)}>{t('gallery.rename')}</button>
+            {#if auth.userId}<button class="mini" onclick={() => (sharing = d.id)}>{t('gallery.share')}</button>{/if}
             <button class="mini" onclick={async () => { await duplicateDrawing(d.id, t('gallery.copy')); refresh(); }}>{t('gallery.duplicate')}</button>
             <button class="mini danger" onclick={async () => { if (confirm(t('gallery.deleteConfirm', { name: name(d) }))) { await deleteDrawing(d.id); refresh(); } }}>{t('gallery.delete')}</button>
           </div>
@@ -80,7 +86,12 @@
       {/each}
     </ul>
   {/if}
+  {#if shared}<p class="toast" role="status">{t('feed.shared')}</p>{/if}
 </main>
+
+{#if sharing}
+  <ShareDialog drawingId={sharing} onclose={() => (sharing = null)} ondone={() => { shared = true; setTimeout(() => (shared = false), 2500); }} />
+{/if}
 
 <style>
   main { max-width: 1040px; margin: 0 auto; padding: 8px 16px 40px; display: grid; gap: 16px; }
@@ -100,5 +111,6 @@
   input { font: inherit; color: var(--ink); padding: 6px 8px; border: 2px solid var(--line); border-radius: 8px; background: var(--surface-2); width: 100%; }
   .row { display: flex; flex-wrap: wrap; gap: 4px; }
   .mini { font: inherit; font-size: 0.8rem; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); margin: 0; padding: 10px 16px; border-radius: 12px; background: var(--ink); color: var(--bg); }
   .danger { color: #c0392b; }
 </style>

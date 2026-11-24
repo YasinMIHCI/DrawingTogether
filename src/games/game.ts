@@ -6,6 +6,7 @@ export interface GamePlayer {
   id: string;
   nickname: string;
   avatar: number;
+  avatarUrl?: string | null;
 }
 
 /** Contribution d'un joueur : texte, image (PNG en base64) ou rien (temps écoulé, joueur parti). */
@@ -144,7 +145,7 @@ export class Game {
 
   start(): void {
     if (!this.room.isHost) return;
-    const players = this.room.peers.map((p) => ({ id: p.id, nickname: p.nickname, avatar: p.avatar }));
+    const players = this.room.peers.map((p) => ({ id: p.id, nickname: p.nickname, avatar: p.avatar, avatarUrl: p.avatarUrl ?? null }));
     const state: GameState = {
       id: Math.random().toString(36).slice(2, 10),
       config: { ...this.config },

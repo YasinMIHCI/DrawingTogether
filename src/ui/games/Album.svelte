@@ -96,7 +96,7 @@
     <h2>{t('games.album')} — {t(mode.name)}</h2>
     {#if mode.result !== 'single'}
       {@const starter = author(s.pos.chain, 0)}
-      <p class="who"><Avatar id={starter?.avatar ?? 0} size={32} /> {t('games.chainOf', { name: starter?.nickname ?? '?' })} · {s.pos.chain + 1} / {n}</p>
+      <p class="who"><Avatar id={starter?.avatar ?? 0} url={starter?.avatarUrl} size={32} /> {t('games.chainOf', { name: starter?.nickname ?? '?' })} · {s.pos.chain + 1} / {n}</p>
     {/if}
   </header>
 
@@ -125,7 +125,7 @@
       {#each shown as e, r (r)}
         {@const a = author(s.pos.chain, r)}
         <li>
-          <span class="by"><Avatar id={a?.avatar ?? 0} size={28} /> {a?.nickname}</span>
+          <span class="by"><Avatar id={a?.avatar ?? 0} url={a?.avatarUrl} size={28} /> {a?.nickname}</span>
           <EntryView entry={e} />
         </li>
       {/each}

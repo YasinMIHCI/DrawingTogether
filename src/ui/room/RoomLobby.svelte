@@ -87,7 +87,7 @@
         <li class:empty={!p}>
           {#if p}
             <div class="av">
-              <Avatar id={p.avatar} size={56} />
+              <Avatar id={p.avatar} url={p.avatarUrl} size={56} />
               {#if p.id === s.state.hostId}<span class="crown" title={t('shared.host')} aria-label={t('shared.host')}>👑</span>{/if}
             </div>
             <span class="name">{p.nickname}{#if p.id === room.me.id} <em>({t('shared.you')})</em>{/if}</span>

@@ -1,19 +1,8 @@
-import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
-import { SUPABASE_KEY, SUPABASE_URL } from './config';
+import type { RealtimeChannel } from '@supabase/supabase-js';
+import { getSupabase } from './supabase';
 import type { PeerInfo, Transport, TransportFactory, TransportStatus } from './transport';
 
-let client: Promise<SupabaseClient> | null = null;
-
-/** Client Supabase chargé à la demande (il n'alourdit pas les autres pages). */
-function getClient(): Promise<SupabaseClient> {
-  client ??= import('@supabase/supabase-js').then(({ createClient }) =>
-    createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      realtime: { params: { eventsPerSecond: 60 } },
-    }),
-  );
-  return client;
-}
+const getClient = getSupabase;
 
 interface Envelope {
   t: string;
@@ -47,7 +36,7 @@ class SupabaseTransport implements Transport {
       const peers: PeerInfo[] = [];
       for (const metas of Object.values(state)) {
         const m = metas[metas.length - 1];
-        if (m?.id) peers.push({ id: m.id, nickname: m.nickname, avatar: m.avatar, joinedAt: m.joinedAt });
+        if (m?.id) peers.push({ id: m.id, nickname: m.nickname, avatar: m.avatar, avatarUrl: m.avatarUrl ?? null, joinedAt: m.joinedAt });
       }
       for (const fn of this.pres) fn(peers);
     });

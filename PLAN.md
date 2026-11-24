@@ -151,6 +151,14 @@ L'utilisateur bascule entre « Style Krita » et « Style Paint » dans les rég
 - ✅ **T7.3** Performances : cache des calques pendant le dessin (×2,3 plus fluide sur une toile 4000×3000 à 8 calques), résolution d'écran plafonnée à 2×, pages chargées à la demande. Testé sur Chromium (ordinateur, téléphone et tablette émulés) ; tests sur vrais appareils Android / iOS à faire de ton côté.
 - ✅ **T7.4** Accessibilité (audit axe-core sans erreur : contrastes, titres, libellés, structure) ; site installable (PWA) et utilisable hors ligne pour le dessin libre et la galerie.
 
+### Phase 8 — Comptes et réseau social (facultatif pour l'utilisateur)
+- ✅ **T8.1** Comptes pseudo + mot de passe (sans e-mail) ; question secrète choisie à l'inscription pour réinitialiser le mot de passe (5 essais ratés → blocage 15 min). Script `supabase/social.sql`.
+- ✅ **T8.2** Profil : nom affiché, bio, avatar importé (photo recadrée) ou dessiné ; avatar visible aussi dans les salles et les jeux.
+- ✅ **T8.3** Amis : recherche par pseudo, demandes envoyées/reçues, retirer.
+- ✅ **T8.4** Messages entre amis en direct, groupes (créer, renommer, ajouter/retirer des membres, quitter), non-lus et badges.
+- ✅ **T8.5** Fil de dessins : partager depuis la galerie (visible par les amis + discussions choisies), j'aime, commentaires, page profil `#/u/<pseudo>`.
+- ⏳ **T8.6** Test de bout en bout après installation du script SQL côté Supabase.
+
 ### Ordre conseillé
 `Phase 0 → Phase 1 (T1.1–T1.6) → Phase 3 (mobile) et Phase 2 (desktop) en parallèle → Phase 4 → Phase 5 → Phase 6 → reste de la Phase 1 → Phase 7`.
 Ainsi tu as très vite une appli de dessin utilisable sur téléphone, puis la toile partagée, puis les jeux.

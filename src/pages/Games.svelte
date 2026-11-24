@@ -21,7 +21,7 @@
   let needPassword = $state(false);
   const hasNickname = $derived(settings.nickname.trim().length > 0);
 
-  const me = (id = newPlayerId(), joinedAt = Date.now()): PeerInfo => ({ id, nickname: settings.nickname.trim().slice(0, 20), avatar: settings.avatar, joinedAt });
+  const me = (id = newPlayerId(), joinedAt = Date.now()): PeerInfo => ({ id, nickname: settings.nickname.trim().slice(0, 20), avatar: settings.avatar, avatarUrl: settings.avatarUrl, joinedAt });
   const errorText = (r: RejectReason) => t(`shared.err.${r}` as Key);
 
   function enter(r: Room) {

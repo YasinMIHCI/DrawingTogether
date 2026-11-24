@@ -3,6 +3,8 @@ export interface PeerInfo {
   id: string;
   nickname: string;
   avatar: number;
+  /** Avatar importé (compte), sinon on dessine l'avatar n° `avatar` */
+  avatarUrl?: string | null;
   /** Heure d'arrivée dans la salle (sert à choisir le nouvel hôte). */
   joinedAt: number;
 }

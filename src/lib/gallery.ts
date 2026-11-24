@@ -127,3 +127,17 @@ function rememberLast(id: string | null): void {
     /* rien */
   }
 }
+
+/** Image aplatie d'un dessin de la galerie (2048 px max), pour le partager. */
+export async function drawingImage(id: string): Promise<{ png: Blob; width: number; height: number } | null> {
+  const data = await loadDrawing(id);
+  if (!data) return null;
+  const { DrawingDocument } = await import('../engine/layers');
+  const { loadProject } = await import('../engine/project');
+  const doc = new DrawingDocument(data.width, data.height);
+  await loadProject(doc, data);
+  const png = await thumbnail(doc, 2048);
+  if (!png) return null;
+  const k = Math.min(1, 2048 / Math.max(doc.width, doc.height));
+  return { png, width: Math.round(doc.width * k), height: Math.round(doc.height * k) };
+}

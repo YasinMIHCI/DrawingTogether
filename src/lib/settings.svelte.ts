@@ -16,6 +16,8 @@ export interface Settings {
   motion: MotionPreference;
   nickname: string;
   avatar: number;
+  /** Avatar importé (photo ou dessin) du compte connecté, sinon null */
+  avatarUrl: string | null;
 }
 
 const KEY = 'dt.settings';
@@ -29,6 +31,7 @@ export const settings: Settings = $state(
     motion: 'auto',
     nickname: '',
     avatar: Math.floor(Math.random() * 12),
+    avatarUrl: null,
   }),
 );
 

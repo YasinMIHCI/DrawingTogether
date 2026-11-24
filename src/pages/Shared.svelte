@@ -44,7 +44,7 @@
   const hasNickname = $derived(settings.nickname.trim().length > 0);
 
   function me(id = newPlayerId(), joinedAt = Date.now()): PeerInfo {
-    return { id, nickname: settings.nickname.trim().slice(0, 20), avatar: settings.avatar, joinedAt };
+    return { id, nickname: settings.nickname.trim().slice(0, 20), avatar: settings.avatar, avatarUrl: settings.avatarUrl, joinedAt };
   }
 
   /** Entre dans la salle : crée la toile, lance la synchronisation (et charge la sauvegarde si on rouvre la salle). */

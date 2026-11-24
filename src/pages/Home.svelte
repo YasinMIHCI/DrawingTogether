@@ -13,6 +13,8 @@
       icon: 'M4 6h16v10H8l-4 4zM9 11h.01M12 11h.01M15 11h.01' },
     { route: 'gallery', title: 'home.gallery.title', desc: 'home.gallery.desc', color: '#b9a6ff',
       icon: 'M3 5h8v6H3zM13 5h8v6h-8zM3 13h8v6H3zM13 13h8v6h-8z' },
+    { route: 'feed', title: 'home.social.title', desc: 'home.social.desc', color: '#7fc8f8',
+      icon: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21c0-4 3-6 7-6s7 2 7 6M15 13h7v5h-3l-2 2v-2h-2z' },
   ];
 </script>
 
