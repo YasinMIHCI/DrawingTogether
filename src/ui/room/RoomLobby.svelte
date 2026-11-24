@@ -1,13 +1,18 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
   import { MAX_PLAYERS, type Room } from '../../net/room';
   import { t } from '../../lib/i18n/t.svelte';
   import Avatar from '../../components/Avatar.svelte';
   import QrCode from './QrCode.svelte';
   import type { SharedSession } from '../../net/sharedSession';
 
-  let { room, session, onleave, onopen, ondeletesave }: {
+  let { room, session, onleave, onopen, ondeletesave, primaryLabel, extra, canvasInfo = true }: {
     room: Room; session?: SharedSession; onleave: () => void; onopen?: () => void; ondeletesave?: () => void;
+    /** Texte du bouton principal (par défaut « Ouvrir la toile ») */
+    primaryLabel?: string;
+    /** Contenu supplémentaire (ex. choix du mode de jeu) */
+    extra?: Snippet;
+    canvasInfo?: boolean;
   } = $props();
 
   let tick = $state(0);
@@ -30,7 +35,7 @@
     void tick;
     return { peers: room.peers, state: room.state, isHost: room.isHost, status: room.status };
   });
-  const link = $derived(`${location.origin}${location.pathname}#/shared/${room.code}`);
+  const link = $derived(`${location.origin}${location.pathname}#/${location.hash.includes('/games') ? 'games' : 'shared'}/${room.code}`);
   let copied = $state(false);
   let showQr = $state(false);
   let password = $state('');
@@ -57,7 +62,7 @@
     <div>
       <p class="label">{t('shared.room')}</p>
       <p class="code">{room.code}</p>
-      <p class="muted">{t('shared.canvasInfo', { w: String(s.state.settings.width), h: String(s.state.settings.height) })}</p>
+      {#if canvasInfo}<p class="muted">{t('shared.canvasInfo', { w: String(s.state.settings.width), h: String(s.state.settings.height) })}</p>{/if}
     </div>
     <div class="actions">
       <button class="btn primary" onclick={copy}>{copied ? t('shared.copied') : t('shared.copyLink')}</button>
@@ -92,6 +97,8 @@
       {/each}
     </ul>
   </div>
+
+  {#if extra}{@render extra()}{/if}
 
   {#if s.isHost}
     <div class="card">
@@ -137,7 +144,7 @@
 
   <div class="bottom">
     <button class="btn" onclick={onleave}>{t('shared.leave')}</button>
-    <button class="btn primary" disabled={!onopen} onclick={onopen}>{t('shared.openCanvas')}</button>
+    {#if onopen}<button class="btn primary" onclick={onopen}>{primaryLabel ?? t('shared.openCanvas')}</button>{/if}
   </div>
 
 </section>

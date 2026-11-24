@@ -122,25 +122,25 @@ L'utilisateur bascule entre « Style Krita » et « Style Paint » dans les rég
 - ✅ **T5.5** Discussion (chat) dans la salle.
 
 ### Phase 6 — Jeux de téléphone dessiné
-- **T6.1** Moteur de partie générique : « chaînes » qui tournent entre joueurs, étapes (écrire / dessiner / regarder), minuteur, attribution sans répétition, gestion des absents.
-- **T6.2** Écran de configuration avec deux onglets : **Préréglages** (les modes) et **Personnalisations** ❓(Q2).
-- **T6.3** Écrans d'étape : saisie de phrase, dessin, attente des autres. **Dessin : éditeur simplifié par défaut** (quelques pinceaux, gomme, remplissage, couleurs, annuler) **+ bouton pour passer à l'éditeur complet**.
-- **T6.4** **Album de fin** : révélation chaîne par chaîne, réactions, téléchargement (image/GIF).
-- **T6.5** Un sous-tâche par mode (voir tableau ci-dessous).
+- ✅ **T6.1** Moteur de partie générique : « chaînes » qui tournent entre joueurs, étapes (écrire / dessiner / regarder), minuteur, attribution sans répétition, gestion des absents.
+- ✅ **T6.2** Écran de configuration avec deux onglets : **Préréglages** (les modes) et **Personnalisations** ❓(Q2).
+- ✅ **T6.3** Écrans d'étape : saisie de phrase, dessin, attente des autres. **Dessin : éditeur simplifié par défaut** (quelques pinceaux, gomme, remplissage, couleurs, annuler) **+ bouton pour passer à l'éditeur complet**.
+- ✅ **T6.4** **Album de fin** : révélation chaîne par chaîne, réactions, téléchargement (image/GIF).
+- ✅ **T6.5** Un sous-tâche par mode (voir tableau ci-dessous).
 
 | ID | Mode (nom provisoire) | Ce que j'ai compris | Statut |
 |---|---|---|---|
-| T6.5.1 | Normal | Alternance écrire → dessiner → décrire → dessiner… jusqu'à la fin du tour. | ✅ compris |
+| ✅ T6.5.1 | Normal → « Téléphone dessiné » | Alternance écrire → dessiner → décrire → dessiner… jusqu'à la fin du tour. | ✅ compris |
 | ~~T6.5.2~~ | Imitation (reporté) | Reproduire le dessin précédent ; le temps diminue à chaque tour. Le dessin d'origine est-il visible pendant qu'on dessine ou seulement quelques secondes ? Point de départ : phrase ou dessin ? | ❓ Q2 |
-| T6.5.3 | Animation | Chaque joueur dessine l'image suivante en voyant la précédente en transparence ; le résultat est une animation. | ✅ compris (nb d'images, vitesse ❓) |
+| ✅ T6.5.3 | Animation → « Flip-book » | Chaque joueur dessine l'image suivante en voyant la précédente en transparence ; le résultat est une animation. | ✅ compris (nb d'images, vitesse ❓) |
 | ~~T6.5.4~~ | Brise-glace (reporté) | « Une seule phrase, poser des questions » — mécanique exacte ? | ❓ Q2 |
-| T6.5.5 | Cadavre exquis | Chacun dessine une partie d'un personnage en ne voyant que le bas du dessin précédent ; résultat assemblé verticalement. | ✅ compris |
-| T6.5.6 | Complément | On commence par quelques traits, le suivant complète/interprète. | ✅ compris (qui fait les traits de départ ? joueur ou aléatoire ❓) |
-| T6.5.7 | Chef-d'œuvre | Un seul tour, un seul dessin, sans limite de temps. | ✅ compris |
-| T6.5.8 | Histoire | Écriture seule : chacun continue l'histoire en ne voyant que la phrase précédente. | ✅ compris |
+| ✅ T6.5.5 | Cadavre exquis | Chacun dessine une partie d'un personnage en ne voyant que le bas du dessin précédent ; résultat assemblé verticalement. | ✅ compris |
+| ✅ T6.5.6 | Complément → « Gribouillis » (gribouillis de départ tiré au hasard) | On commence par quelques traits, le suivant complète/interprète. | ✅ compris (qui fait les traits de départ ? joueur ou aléatoire ❓) |
+| ✅ T6.5.7 | Chef-d'œuvre → « Atelier libre » | Un seul tour, un seul dessin, sans limite de temps. | ✅ compris |
+| ✅ T6.5.8 | Histoire → « Histoire à la chaîne » | Écriture seule : chacun continue l'histoire en ne voyant que la phrase précédente. | ✅ compris |
 | ~~T6.5.9~~ | Pièce manquante (reporté) | « Dessin pas fini, chaque tour une partie est ajoutée et une autre perdue » — qu'est-ce qui est perdu exactement ? | ❓ Q2 |
 | ~~T6.5.10~~ | Secret (reporté) | Comme Normal, mais les dessins/phrases sont cachés pendant la partie — on dessine à l'aveugle ? | ❓ Q2 |
-| T6.5.11 | Co-op | À partir d'une phrase, chaque joueur ajoute sa contribution au même dessin. | ✅ compris |
+| ✅ T6.5.11 | Co-op → « Fresque à relais » | À partir d'une phrase, chaque joueur ajoute sa contribution au même dessin. | ✅ compris |
 | ~~T6.5.12~~ | Score (reporté) | Un point quand le sens est conservé — qui juge (vote des joueurs, l'auteur de la phrase) ? | ❓ Q2 |
 | ~~T6.5.13~~ | Sandwich (reporté) | Description non visible sur la capture. | ❓ Q2 |
 | — | Modes ❓ ci-dessus et suite de la liste | **Reportés** : non implémentés pour l'instant. | ⏸ |

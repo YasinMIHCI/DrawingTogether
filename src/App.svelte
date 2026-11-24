@@ -1,10 +1,10 @@
 <script lang="ts">
   import TopBar from './components/TopBar.svelte';
   import Home from './pages/Home.svelte';
-  import Soon from './pages/Soon.svelte';
   import Settings from './pages/Settings.svelte';
   import Draw from './pages/Draw.svelte';
   import Shared from './pages/Shared.svelte';
+  import Games from './pages/Games.svelte';
   import { router } from './lib/router.svelte';
   import { settings } from './lib/settings.svelte';
   import { uiStyle } from './lib/screen.svelte';
@@ -24,7 +24,7 @@
 {:else if router.route === 'shared'}
   <Shared />
 {:else if router.route === 'games'}
-  <Soon title="home.games.title" />
+  <Games />
 {:else if router.route === 'settings'}
   <Settings />
 {:else}

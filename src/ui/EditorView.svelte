@@ -35,6 +35,7 @@
   }
 </script>
 
+<div class="editor-root">
 <canvas class="canvas-surface" use:attachEditor={editor}
   style:top="{insets.top}px" style:left="{insets.left}px"
   style:width="calc(100% - {insets.left + insets.right}px)" style:height="calc(100% - {insets.top + insets.bottom}px)"></canvas>
@@ -45,7 +46,9 @@
 {:else}
   <MobileUI {editor} {files} {status} />
 {/if}
+</div>
 
 <style>
+  .editor-root { position: absolute; inset: 0; overflow: hidden; }
   canvas { position: absolute; display: block; }
 </style>

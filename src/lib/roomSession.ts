@@ -9,21 +9,23 @@ export interface RoomSession {
   settings: RoomSettings;
 }
 
-const KEY = 'dt.room';
+/** Une session par type de page (toile partagée / jeux). */
+type Kind = 'shared' | 'games';
+const keyOf = (kind: Kind) => (kind === 'shared' ? 'dt.room' : 'dt.gameRoom');
 
-export function loadRoomSession(): RoomSession | null {
+export function loadRoomSession(kind: Kind = 'shared'): RoomSession | null {
   try {
-    const raw = sessionStorage.getItem(KEY);
+    const raw = sessionStorage.getItem(keyOf(kind));
     return raw ? (JSON.parse(raw) as RoomSession) : null;
   } catch {
     return null;
   }
 }
 
-export function saveRoomSession(s: RoomSession | null): void {
+export function saveRoomSession(s: RoomSession | null, kind: Kind = 'shared'): void {
   try {
-    if (s) sessionStorage.setItem(KEY, JSON.stringify(s));
-    else sessionStorage.removeItem(KEY);
+    if (s) sessionStorage.setItem(keyOf(kind), JSON.stringify(s));
+    else sessionStorage.removeItem(keyOf(kind));
   } catch {
     /* stockage indisponible */
   }
