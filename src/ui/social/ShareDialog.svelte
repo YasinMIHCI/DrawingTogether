@@ -1,15 +1,18 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { createPost, myConversations, sendMessage, type ConversationSummary } from '../../social/api';
+  import { createPost, listCommunities, myConversations, sendMessage, type Community, type ConversationSummary } from '../../social/api';
+  import { settings } from '../../lib/settings.svelte';
   import { drawingImage, listDrawings, loadThumb, thumbnail, type DrawingInfo } from '../../lib/gallery';
   import { Editor } from '../../engine/editor';
   import { t } from '../../lib/i18n/t.svelte';
   import SimpleEditor from '../games/SimpleEditor.svelte';
 
   /** Publier : texte, petit dessin fait sur place, ou dessin de la galerie ; dans le fil des amis et/ou des discussions. */
-  let { drawingId = null, conversation = null, onclose, ondone }: {
-    drawingId?: string | null; conversation?: string | null; onclose: () => void; ondone?: (postId: string) => void;
+  let { drawingId = null, conversation = null, community = null, onclose, ondone }: {
+    drawingId?: string | null; conversation?: string | null; community?: string | null; onclose: () => void; ondone?: (postId: string) => void;
   } = $props();
+  let communities = $state<Community[]>([]);
+  let room = $state<string>('');
 
   type Mode = 'text' | 'draw' | 'gallery';
   let mode = $state<Mode>('text');
@@ -31,6 +34,8 @@
       loadThumb(drawingId).then((b) => b && (thumbs[drawingId] = URL.createObjectURL(b)));
     }
     if (conversation) targets = [conversation];
+    room = community ?? '';
+    if (!conversation) listCommunities().then((l) => (communities = l ?? []));
     else myConversations().then((c) => (convs = c)).catch(() => {});
     return () => Object.values(thumbs).forEach((u) => URL.revokeObjectURL(u));
   });
@@ -62,7 +67,7 @@
         if (png) img = { png, width: 640, height: 360 };
       }
       if (mode !== 'text' && !img) throw new Error('image');
-      const id = await createPost(img?.png ?? null, img?.width ?? 0, img?.height ?? 0, title, body);
+      const id = await createPost(img?.png ?? null, img?.width ?? 0, img?.height ?? 0, title, body, room || null);
       for (const c of targets) await sendMessage(c, '', id);
       ondone?.(id);
       onclose();
@@ -105,6 +110,16 @@
 
     <textarea bind:value={body} maxlength="1000" rows={mode === 'text' ? 5 : 2} placeholder={mode === 'text' ? t('feed.textPlaceholder') : t('feed.caption')} aria-label={t('feed.textPlaceholder')}></textarea>
 
+    {#if !conversation && communities.length}
+      <label class="room">
+        <span class="muted">{t('com.postIn')}</span>
+        <select bind:value={room}>
+          <option value="">{t('com.none')}</option>
+          {#each communities as c (c.id)}<option value={c.id}>{c.icon} {settings.locale === 'fr' ? c.name_fr : c.name_en}</option>{/each}
+        </select>
+      </label>
+      {#if room}<p class="muted small">{t('com.public')}</p>{/if}
+    {/if}
     {#if !conversation && convs.length}
       <details>
         <summary class="muted">{t('feed.where')}</summary>
@@ -139,4 +154,6 @@
   fieldset { border: 0; padding: 6px 0 0; margin: 0; display: grid; gap: 6px; }
   summary { cursor: pointer; }
   .end { justify-content: flex-end; }
+  .room { display: grid; gap: 4px; }
+  .small { font-size: 0.82rem; }
 </style>

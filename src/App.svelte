@@ -34,6 +34,9 @@
     bouille: () => import('./pages/Bouille.svelte'),
     notifications: () => import('./pages/Notifications.svelte'),
     post: () => import('./pages/Post.svelte'),
+    communities: () => import('./pages/Communities.svelte'),
+    c: () => import('./pages/Community.svelte'),
+    moderation: () => import('./pages/Moderation.svelte'),
   } as const;
   const chrome = $derived(router.route !== 'draw' && !appChrome.fullscreen);
   const loader = $derived(router.route === 'home' ? null : pages[router.route]());
@@ -49,7 +52,7 @@
 </script>
 
 {#if chrome}<Sidebar />{/if}
-{#key router.route === 'draw' || router.route === 'u' || router.route === 'post' ? `${router.route}/${router.param}` : router.route}
+{#key router.route === 'draw' || router.route === 'u' || router.route === 'post' || router.route === 'c' ? `${router.route}/${router.param}` : router.route}
   <div class="page" class:chrome class:tiled-bg={chrome} in:fade={{ duration: reducedMotion() ? 0 : 160 }}>
     {#if loader}
       {#await loader then mod}

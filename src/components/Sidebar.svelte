@@ -18,12 +18,19 @@
   const items: { route: Route; label: Key; icon: string; badge?: () => number; also?: Route[] }[] = [
     { route: 'home', label: 'nav.home', icon: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z', also: ['draw', 'shared', 'games'] },
     { route: 'feed', label: 'nav.feed', icon: 'M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM8.5 10.5a1 1 0 1 0 0-.01M15.5 10.5a1 1 0 1 0 0-.01M8 14.5c2 2 6 2 8 0' },
+    { route: 'communities', label: 'nav.communities', icon: 'M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 13a3 3 0 1 0 0-.01M3 19c0-2.5 2.2-4 5-4M21 19c0-2.5-2.2-4-5-4M7 21c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5', also: ['c'] },
     { route: 'friends', label: 'nav.friends', icon: 'M8.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2 20c0-3.5 3-5.5 6.5-5.5S15 16.5 15 20M16 4.5a3.2 3.2 0 0 1 0 6.3M17.5 14.6c2.6.5 4.5 2.4 4.5 5.4', badge: () => social.requests, },
     { route: 'messages', label: 'nav.messages', icon: 'M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3.5 6.5 12 13l8.5-6.5', badge: () => social.unread },
     { route: 'notifications', label: 'nav.notifications', icon: 'M6 4h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l-4 3v-3H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM8 8.5h8M8 12h5', badge: () => social.notifications, also: ['post'] },
     { route: 'gallery', label: 'nav.gallery', icon: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z' },
     { route: 'settings', label: 'nav.settings', icon: 'M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7 7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7 7 0 0 0 1.7-1l2.4 1 2-3.4z', also: ['pen-test'] },
   ];
+  // Lien « Modération » pour les modérateurs seulement
+  let mod = $state(false);
+  $effect(() => {
+    if (auth.userId) import('../social/api').then((a) => a.isModerator()).then((m) => (mod = m));
+    else mod = false;
+  });
   const active = (i: (typeof items)[number]) => router.route === i.route || !!i.also?.includes(router.route);
 
   function back() {
@@ -48,6 +55,12 @@
         <span class="label">{t(i.label)}</span>
       </a>
     {/each}
+    {#if mod}
+      <a class="item" class:on={router.route === 'moderation'} href={href('moderation')}>
+        <span class="ico"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6zM9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
+        <span class="label">{t('nav.moderation')}</span>
+      </a>
+    {/if}
   </div>
   <button class="item back" onclick={back} disabled={router.route === 'home'}>
     <span class="ico"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg></span>

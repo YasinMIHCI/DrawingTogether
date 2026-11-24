@@ -1,8 +1,8 @@
 /** Routage par hash (#/draw…) : compatible GitHub Pages sans configuration serveur. */
 export type Route = 'home' | 'draw' | 'shared' | 'games' | 'settings' | 'gallery' | 'pen-test'
-  | 'account' | 'friends' | 'messages' | 'feed' | 'u' | 'bouille' | 'notifications' | 'post';
+  | 'account' | 'friends' | 'messages' | 'feed' | 'u' | 'bouille' | 'notifications' | 'post' | 'communities' | 'c' | 'moderation';
 
-const ROUTES: Route[] = ['home', 'draw', 'shared', 'games', 'settings', 'gallery', 'pen-test', 'account', 'friends', 'messages', 'feed', 'u', 'bouille', 'notifications', 'post'];
+const ROUTES: Route[] = ['home', 'draw', 'shared', 'games', 'settings', 'gallery', 'pen-test', 'account', 'friends', 'messages', 'feed', 'u', 'bouille', 'notifications', 'post', 'communities', 'c', 'moderation'];
 
 export function parseHash(hash: string): Route {
   const name = hash.replace(/^#\/?/, '').split(/[/?]/)[0];

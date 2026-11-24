@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { feed, type Post } from '../social/api';
+  import { feed, friendState, type Post } from '../social/api';
   import { auth } from '../social/auth.svelte';
   import { t } from '../lib/i18n/t.svelte';
   import RequireAccount from '../ui/social/RequireAccount.svelte';
@@ -13,9 +13,12 @@
   let error = $state<string | null>(null);
   let sharing = $state(false);
 
+  // Le fil : mes publications et celles de mes amis (les salons ont leurs propres pages)
+  let owners: string[] = [];
   async function refresh() {
     try {
-      const list = await feed({ limit: PAGE });
+      owners = [auth.userId!, ...(await friendState()).friends.map((f) => f.id)];
+      const list = await feed({ limit: PAGE, owners });
       posts = list;
       more = list.length === PAGE;
     } catch {
@@ -23,7 +26,7 @@
     }
   }
   async function loadMore() {
-    const list = await feed({ limit: PAGE, before: posts?.at(-1)?.created_at });
+    const list = await feed({ limit: PAGE, owners, before: posts?.at(-1)?.created_at });
     posts = [...(posts ?? []), ...list];
     more = list.length === PAGE;
   }

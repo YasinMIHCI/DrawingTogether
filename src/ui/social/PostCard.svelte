@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { addComment, deleteComment, deletePost, listComments, setLike, type Comment, type Post } from '../../social/api';
+  import { addComment, deleteComment, deletePost, isModerator, listComments, listCommunities, reportPost, setHidden, setLike, type Comment, type Community, type Post, type ReportReason } from '../../social/api';
   import { auth } from '../../social/auth.svelte';
   import { settings } from '../../lib/settings.svelte';
   import { relativeTime } from '../../lib/time';
@@ -23,6 +23,27 @@
     count = post.comments;
   });
   let comments = $state<Comment[] | null>(null);
+  let community = $state<Community | null>(null);
+  let mod = $state(false);
+  let reporting = $state(false);
+  let reported = $state(false);
+  let hidden = $state(false);
+  $effect.pre(() => {
+    hidden = !!post.hidden;
+  });
+  $effect(() => {
+    const id = post.community_id;
+    if (id) listCommunities().then((l) => (community = l?.find((c) => c.id === id) ?? null));
+    isModerator().then((m) => (mod = m));
+  });
+  async function report(reason: ReportReason) {
+    reporting = false;
+    await reportPost(post.id, reason).then(() => (reported = true)).catch(() => alert(t('acc.err.network')));
+  }
+  async function toggleHidden() {
+    hidden = !hidden;
+    await setHidden(post.id, hidden).catch(() => (hidden = !hidden));
+  }
   let draft = $state('');
   const name = $derived(post.owner?.display_name || post.owner?.username || '?');
   const mine = $derived(post.owner_id === auth.userId);
@@ -62,6 +83,12 @@
       <time datetime={post.created_at}>{relativeTime(post.created_at, settings.locale)}</time>
     </div>
     <div class="bubble">
+      {#if community || hidden}
+        <p class="tags">
+          {#if community}<a class="com" href="#/c/{community.id}">{community.icon} {settings.locale === 'fr' ? community.name_fr : community.name_en}</a>{/if}
+          {#if hidden}<span class="hid">{t('mod.hidden')}</span>{/if}
+        </p>
+      {/if}
       {#if post.title}<p class="topic">✎ {post.title}</p>{/if}
       {#if post.body}<p class="body">{post.body}</p>{/if}
       {#if post.image_path}<PostImage path={post.image_path} width={post.width} height={post.height} alt={post.title} />{/if}
@@ -78,7 +105,22 @@
         <button class="count" aria-expanded={!!comments} title={t('feed.comments')} onclick={() => (comments ? (comments = null) : loadComments())}>
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 5h16v10H10l-4 4v-4H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>{count}
         </button>
-        {#if mine}
+        {#if !mine}
+          <span class="rep-wrap">
+            <button class="count" class:done={reported} title={reported ? t('rep.done') : t('rep.title')} aria-label={t('rep.title')} aria-expanded={reporting} disabled={reported} onclick={() => (reporting = !reporting)}>
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5" fill={reported ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+            </button>
+            {#if reporting}
+              <span class="rep-menu" role="menu">
+                {#each ['spam', 'offensive', 'other'] as const as r (r)}<button role="menuitem" onclick={() => report(r)}>{t(`rep.${r}`)}</button>{/each}
+              </span>
+            {/if}
+          </span>
+        {/if}
+        {#if mod && !mine}
+          <button class="count" title={hidden ? t('mod.unhide') : t('mod.hide')} onclick={toggleHidden}>{hidden ? '👁' : '🙈'}</button>
+        {/if}
+        {#if mine || mod}
           <button class="count del" title={t('feed.delete')} aria-label={t('feed.delete')} onclick={async () => { if (confirm(t('feed.deleteConfirm'))) { await deletePost(post); ondelete?.(); } }}>
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
           </button>
@@ -119,6 +161,14 @@
     content: ''; position: absolute; left: -9px; top: 18px; width: 16px; height: 16px; background: var(--surface);
     border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); transform: rotate(45deg); border-radius: 0 0 0 4px;
   }
+  .tags { margin: 0; display: flex; gap: 6px; flex-wrap: wrap; }
+  .com { font-size: 0.8rem; font-weight: 800; color: var(--blue-deep); background: color-mix(in srgb, var(--blue) 14%, transparent); padding: 2px 10px; border-radius: 9px; text-decoration: none; }
+  .hid { font-size: 0.8rem; font-weight: 700; background: #ffe1dc; color: #8a1f0e; padding: 2px 8px; border-radius: 8px; }
+  .rep-wrap { position: relative; }
+  .count.done { color: #c0392b; }
+  .rep-menu { position: absolute; right: 0; bottom: calc(100% + 4px); z-index: 5; display: grid; min-width: 170px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+  .rep-menu button { font: inherit; text-align: left; padding: 8px 12px; border: 0; background: none; color: var(--ink); cursor: pointer; }
+  .rep-menu button:hover { background: var(--surface-2); }
   .topic { margin: 0; color: var(--accent); font-weight: 800; font-size: 0.85rem; }
   .body { margin: 0; font-size: 1.05rem; white-space: pre-wrap; word-break: break-word; }
   .actions { display: flex; align-items: center; gap: 6px; border-top: 1px solid var(--line); margin: 0 -14px; padding: 6px 10px 0; }

@@ -205,6 +205,8 @@ export interface Post {
   title: string;
   /** Texte de la publication (vide si dessin seul) */
   body: string;
+  community_id?: string | null;
+  hidden?: boolean;
   image_path: string | null;
   width: number;
   height: number;
@@ -216,7 +218,7 @@ export interface Post {
 }
 
 /** Publie un dessin et/ou un texte (visible par mes amis, et là où je le partage). */
-export async function createPost(png: Blob | null, width: number, height: number, title: string, body = ''): Promise<string> {
+export async function createPost(png: Blob | null, width: number, height: number, title: string, body = '', community: string | null = null): Promise<string> {
   const client = await sb();
   const id = crypto.randomUUID();
   let path: string | null = null;
@@ -227,29 +229,39 @@ export async function createPost(png: Blob | null, width: number, height: number
   }
   const row: Record<string, unknown> = { id, owner_id: me(), title: title.trim().slice(0, 80), image_path: path, width, height };
   if (body.trim()) row.body = body.trim().slice(0, 1000);
+  if (community) row.community_id = community;
   check(await client.from('posts').insert(row));
   return id;
 }
 
-let hasBody = true;
-export async function feed(options: { owner?: string; ids?: string[]; limit?: number; before?: string } = {}): Promise<Post[]> {
-  const run = async (withBody: boolean) => {
+// Colonnes ajoutées par les scripts social-2 / social-4 : on se replie si elles n'existent pas encore
+const COLSETS = ['body, community_id, hidden, ', 'body, ', ''];
+let colset = 0;
+export interface FeedOptions {
+  owner?: string;
+  /** Seulement ces auteurs (le fil : moi et mes amis) */
+  owners?: string[];
+  ids?: string[];
+  community?: string;
+  limit?: number;
+  before?: string;
+}
+export async function feed(options: FeedOptions = {}): Promise<Post[]> {
+  const run = async (extra: string) => {
     let q = (await sb())
       .from('posts')
-      .select(`id, owner_id, title, ${withBody ? 'body, ' : ''}image_path, width, height, created_at, post_likes(user_id), post_comments(count)`)
+      .select(`id, owner_id, title, ${extra}image_path, width, height, created_at, post_likes(user_id), post_comments(count)`)
       .order('created_at', { ascending: false })
       .limit(options.limit ?? 30);
     if (options.owner) q = q.eq('owner_id', options.owner);
     if (options.ids) q = q.in('id', options.ids);
+    if (options.owners) q = q.in('owner_id', options.owners);
+    if (options.community) q = q.eq('community_id', options.community);
     if (options.before) q = q.lt('created_at', options.before);
     return q;
   };
-  let r = await run(hasBody);
-  // Colonne « body » absente tant que social-2.sql n'est pas lancé
-  if (r.error && hasBody) {
-    hasBody = false;
-    r = await run(false);
-  }
+  let r = await run(COLSETS[colset]);
+  while (r.error && colset < COLSETS.length - 1) r = await run(COLSETS[++colset]);
   const rows = (check(r) as unknown[]).map((x) => ({ body: '', ...(x as object) })) as (Omit<Post, 'likes' | 'liked' | 'comments' | 'owner'> & {
     post_likes: { user_id: string }[]; post_comments: { count: number }[];
   })[];
@@ -310,7 +322,9 @@ export async function deleteComment(id: number): Promise<void> {
 
 export async function deletePost(post: Post): Promise<void> {
   const client = await sb();
-  check(await client.from('posts').delete().eq('id', post.id));
+  const r = await client.from('posts').delete().eq('id', post.id).select('id');
+  check(r);
+  if (!r.data?.length) throw new Error('forbidden');
   if (post.image_path) await client.storage.from('posts').remove([post.image_path]);
 }
 
@@ -380,4 +394,86 @@ export async function markNotificationsRead(): Promise<void> {
 
 export async function clearNotifications(): Promise<void> {
   await (await sb()).from('notifications').delete().eq('user_id', me());
+}
+
+// ===================== Salons publics =====================
+
+export interface Community {
+  id: string;
+  name_fr: string;
+  name_en: string;
+  desc_fr: string;
+  desc_en: string;
+  icon: string;
+  color: string;
+  featured: boolean;
+  position: number;
+  favorite: boolean;
+}
+
+let communityCache: Promise<Community[]> | null = null;
+/** Salons (null si social-4.sql n'est pas installé). */
+export async function listCommunities(refresh = false): Promise<Community[] | null> {
+  if (refresh || !communityCache) {
+    communityCache = (async () => {
+      const client = await sb();
+      const [c, f] = await Promise.all([
+        client.from('communities').select('*').order('position'),
+        client.from('community_favorites').select('community_id'),
+      ]);
+      if (c.error) throw new Error(c.error.message);
+      const favs = new Set(((f.data ?? []) as { community_id: string }[]).map((x) => x.community_id));
+      return (c.data as Community[]).map((x) => ({ ...x, favorite: favs.has(x.id) }));
+    })();
+    communityCache.catch(() => (communityCache = null));
+  }
+  return communityCache.catch(() => null);
+}
+
+export async function setFavorite(community: string, on: boolean): Promise<void> {
+  const client = await sb();
+  if (on) check(await client.from('community_favorites').insert({ community_id: community, user_id: me() }));
+  else check(await client.from('community_favorites').delete().eq('community_id', community).eq('user_id', me()));
+  communityCache = null;
+}
+
+export type ReportReason = 'spam' | 'offensive' | 'other';
+export async function reportPost(postId: string, reason: ReportReason): Promise<void> {
+  const r = await (await sb()).from('reports').insert({ post_id: postId, reporter: me(), reason });
+  // Déjà signalé par moi : rien à faire
+  if (r.error && !r.error.message.includes('duplicate')) throw new Error(r.error.message);
+}
+
+let moderator: Promise<boolean> | null = null;
+export function isModerator(): Promise<boolean> {
+  moderator ??= sb().then(async (c) => {
+    const r = await c.rpc('is_moderator');
+    return !r.error && r.data === true;
+  });
+  return moderator;
+}
+
+export interface ReportedPost {
+  post: Post;
+  reasons: Record<ReportReason, number>;
+}
+/** Publications signalées (modération). */
+export async function reportedPosts(): Promise<ReportedPost[]> {
+  const rows = check(await (await sb()).from('reports').select('post_id, reason')) as { post_id: string; reason: ReportReason }[];
+  const by = new Map<string, Record<ReportReason, number>>();
+  for (const r of rows) {
+    const x = by.get(r.post_id) ?? { spam: 0, offensive: 0, other: 0 };
+    x[r.reason]++;
+    by.set(r.post_id, x);
+  }
+  if (!by.size) return [];
+  const posts = await feed({ ids: [...by.keys()], limit: 100 });
+  return posts.map((post) => ({ post, reasons: by.get(post.id)! }));
+}
+
+export async function setHidden(postId: string, hidden: boolean): Promise<void> {
+  check(await (await sb()).from('posts').update({ hidden }).eq('id', postId));
+}
+export async function dismissReports(postId: string): Promise<void> {
+  check(await (await sb()).from('reports').delete().eq('post_id', postId));
 }
