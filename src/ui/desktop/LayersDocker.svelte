@@ -39,36 +39,37 @@
     <DSlider label={t('brush.opacity')} value={Math.round(s.active.opacity * 100)} min={0} max={100} width={70} unit="%"
       onchange={(v) => editor.setLayerProps(s.active.id, { opacity: v / 100 })} />
   </div>
-  <ul class="list" role="listbox" aria-label={t('layers.title')} ondragover={(e) => e.preventDefault()} ondrop={drop}>
+  <ul class="list" aria-label={t('layers.title')} ondragover={(e) => e.preventDefault()} ondrop={drop}>
     {#each s.layers as l, i (l.id)}
-      <li role="option" aria-selected={l.id === s.active.id} class:active={l.id === s.active.id} class:drop={dropAt === i}
+      <li class:active={l.id === s.active.id} class:drop={dropAt === i}
         draggable={renaming !== l.id} ondragstart={() => (dragId = l.id)} ondragend={() => (dragId = dropAt = null)}
-        ondragover={(e) => { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(); dropAt = e.clientY < r.top + r.height / 2 ? i : i + 1; }}
-        onclick={() => editor.setActiveLayer(l.id)} onkeydown={(e) => e.key === 'Enter' && editor.setActiveLayer(l.id)}>
-        <button class="d-ibtn" onclick={(e) => { e.stopPropagation(); editor.setLayerProps(l.id, { visible: !l.visible }); }} aria-label={t('layers.visible')} aria-pressed={l.visible}>
+        ondragover={(e) => { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(); dropAt = e.clientY < r.top + r.height / 2 ? i : i + 1; }}>
+        <button class="d-ibtn" onclick={() => editor.setLayerProps(l.id, { visible: !l.visible })} aria-label="{t('layers.visible')} : {name(l)}" aria-pressed={l.visible}>
           <Icon name={l.visible ? 'eye' : 'eyeOff'} size={15} />
         </button>
         <LayerThumb source={l.surface.canvas} docW={s.w} docH={s.h} {tick} width={40} />
         {#if renaming === l.id}
           <!-- svelte-ignore a11y_autofocus -->
-          <input type="text" value={name(l)} autofocus onclick={(e) => e.stopPropagation()}
+          <input type="text" value={name(l)} autofocus aria-label={t('m.layerName')}
             onblur={(e) => { editor.setLayerProps(l.id, { name: e.currentTarget.value || null }); renaming = null; }}
             onkeydown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') renaming = null; }} />
         {:else}
-          <span class="name" ondblclick={() => (renaming = l.id)} role="textbox" tabindex="-1" aria-readonly="true">{name(l)}</span>
+          <button class="name" aria-current={l.id === s.active.id ? 'true' : undefined} title={name(l)}
+            onclick={() => editor.setActiveLayer(l.id)} ondblclick={() => (renaming = l.id)}
+            onkeydown={(e) => e.key === 'F2' && (renaming = l.id)}>{name(l)}</button>
         {/if}
         {#if l.opacity < 1}<span class="op">{Math.round(l.opacity * 100)}%</span>{/if}
-        <button class="d-ibtn" onclick={(e) => { e.stopPropagation(); editor.setLayerProps(l.id, { locked: !l.locked }); }} aria-label={t('layers.lock')} aria-pressed={l.locked}>
+        <button class="d-ibtn" onclick={() => editor.setLayerProps(l.id, { locked: !l.locked })} aria-label="{t('layers.lock')} : {name(l)}" aria-pressed={l.locked}>
           <Icon name={l.locked ? 'lock' : 'unlock'} size={14} />
         </button>
       </li>
     {/each}
-    <li class="bgrow" class:drop={dropAt === s.layers.length}>
-      <button class="d-tbtn" onclick={() => editor.setBackground(s.bg ? null : '#ffffff')}>
-        {t('m.background')} : {s.bg ? t('layers.bgWhite') : t('layers.bgTransparent')}
-      </button>
-    </li>
   </ul>
+  <div class="bgrow" class:drop={dropAt === s.layers.length}>
+    <button class="d-tbtn" onclick={() => editor.setBackground(s.bg ? null : '#ffffff')}>
+      {t('m.background')} : {s.bg ? t('layers.bgWhite') : t('layers.bgTransparent')}
+    </button>
+  </div>
   <div class="tools">
     <button class="d-ibtn" onclick={() => editor.addLayer()} title={t('layers.add')} aria-label={t('layers.add')}><Icon name="plus" size={16} /></button>
     <button class="d-ibtn" onclick={() => editor.duplicateLayer()} title={t('layers.duplicate')} aria-label={t('layers.duplicate')}><Icon name="duplicate" size={16} /></button>
@@ -89,10 +90,11 @@
   li:hover { background: var(--d-hover); }
   li.active { background: var(--d-accent-soft); }
   li.drop::before { content: ''; position: absolute; left: 0; right: 0; top: -1px; height: 2px; background: var(--d-accent); }
-  .name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .name { flex: 1; min-width: 0; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 4px 2px; border-radius: 4px; }
   li input { flex: 1; min-width: 0; }
   .op { color: var(--d-soft); font-size: 11px; }
-  .bgrow { padding: 4px; }
+  .bgrow { padding: 4px; position: relative; }
+  .bgrow.drop::before { content: ''; position: absolute; left: 0; right: 0; top: -1px; height: 2px; background: var(--d-accent); }
   .bgrow .d-tbtn { width: 100%; justify-content: center; }
   .tools { display: flex; gap: 2px; padding: 4px; border-top: 1px solid var(--d-line); }
 </style>

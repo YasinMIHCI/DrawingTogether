@@ -3,15 +3,18 @@
   import { Editor } from '../engine/editor';
   import { exportImage, PROJECT_EXTENSION, projectFromFile, projectToFile, saveProject, type ProjectData } from '../engine/project';
   import { screen } from '../lib/screen.svelte';
-  import { dbGet, dbSet } from '../lib/db';
+  import { addProject, lastDrawing, loadDrawing, newDrawingId, saveDrawing } from '../lib/gallery';
+  import { href, router } from '../lib/router.svelte';
   import { downloadBlob, pickFile, timestampedName } from '../lib/download';
   import { t } from '../lib/i18n/t.svelte';
   import EditorView from '../ui/EditorView.svelte';
   import NewDocDialog from '../ui/common/NewDocDialog.svelte';
   import type { FileActions } from '../ui/common/types';
 
-  const AUTOSAVE_KEY = 'autosave';
   const touch = screen.info.coarse;
+  /** Dessin ouvert : #/draw/<id> ; sans id, le dernier dessin, sinon un nouveau. */
+  const drawingId = router.param || lastDrawing() || newDrawingId();
+  if (router.param !== drawingId) history.replaceState(null, '', `${href('draw')}/${drawingId}`);
 
   let editor = $state.raw<Editor | null>(null);
   let showNew = $state(false);
@@ -37,7 +40,7 @@
   }
 
   onMount(() => {
-    dbGet<ProjectData>(AUTOSAVE_KEY).then(async (data) => (editor = await restore(data)));
+    loadDrawing(drawingId).then(async (data) => (editor = await restore(data)));
   });
 
   // Sauvegarde automatique 1,5 s après le dernier changement
@@ -51,7 +54,7 @@
       clearTimeout(timer);
       timer = setTimeout(async () => {
         saved = ed.history.version;
-        if (await dbSet(AUTOSAVE_KEY, await saveProject(ed.doc))) flash(t('file.saved'));
+        if (await saveDrawing(drawingId, ed.doc)) flash(t('file.saved'));
       }, 1500);
     });
     return () => {
@@ -67,19 +70,21 @@
     flashTimer = setTimeout(() => (status = ''), 2000);
   }
 
+  /** Nouveau dessin : il s'ajoute à la galerie (l'actuel y reste). */
   async function newDocument(w: number, h: number, bg: string | null) {
     showNew = false;
     const e = makeEditor(w, h);
     e.setBackground(bg);
-    editor = e;
-    await dbSet(AUTOSAVE_KEY, await saveProject(e.doc));
+    const id = newDrawingId();
+    await saveDrawing(id, e.doc);
+    location.hash = `${href('draw')}/${id}`;
   }
 
   async function openProjectFile(file: File) {
     try {
       const data = await projectFromFile(file);
-      editor = await restore(data);
-      await dbSet(AUTOSAVE_KEY, data);
+      const id = await addProject(data, file.name.replace(/\.[^.]+$/, ''));
+      location.hash = `${href('draw')}/${id}`;
     } catch {
       alert(t('file.openError'));
     }

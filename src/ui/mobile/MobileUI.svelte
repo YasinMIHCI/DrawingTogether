@@ -92,7 +92,7 @@
 </script>
 
 <div class="m root" class:tablet class:layers-open={layersOpen}>
-  <header class="top">
+  <div class="top">
     <a class="m-icon-btn back" href={href('home')} aria-label={t('nav.back')}><Icon name="back" size={30} /></a>
     {#if status}<span class="status">{status}</span>{/if}
     <div class="right">
@@ -103,7 +103,7 @@
       <button class="m-icon-btn round" class:on={panel === 'file'} onclick={() => toggle('file')} aria-label={t('m.file')}><Icon name="image" /></button>
       <button class="m-icon-btn round" class:on={panel === 'menu'} onclick={() => toggle('menu')} aria-label={t('m.menu')}><Icon name="more" /></button>
     </div>
-  </header>
+  </div>
 
   {#if s.notice}
     <div class="notice" role="status">{t(`notice.${s.notice}`)}</div>

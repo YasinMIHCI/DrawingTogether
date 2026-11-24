@@ -11,11 +11,13 @@
       icon: 'M3 5h18v12H3zM8 21h8M7 13c2-3 4-1 6-4s3 1 4 0' },
     { route: 'games', title: 'home.games.title', desc: 'home.games.desc', color: 'var(--sun)',
       icon: 'M4 6h16v10H8l-4 4zM9 11h.01M12 11h.01M15 11h.01' },
+    { route: 'gallery', title: 'home.gallery.title', desc: 'home.gallery.desc', color: '#b9a6ff',
+      icon: 'M3 5h8v6H3zM13 5h8v6h-8zM3 13h8v6H3zM13 13h8v6h-8z' },
   ];
 </script>
 
 <main>
-  <p class="tagline">{t('app.tagline')}</p>
+  <h1 class="tagline">{t('app.tagline')}</h1>
   <div class="layout">
     <div class="modes">
       {#each modes as m (m.route)}

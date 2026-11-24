@@ -9,6 +9,7 @@
   import { t } from '../lib/i18n/t.svelte';
   import type { Key } from '../lib/i18n/i18n.svelte';
   import ProfileCard from '../components/ProfileCard.svelte';
+  import { network } from '../lib/online.svelte';
   import RoomLobby from '../ui/room/RoomLobby.svelte';
   import RoomBar from '../ui/room/RoomBar.svelte';
   import EditorView from '../ui/EditorView.svelte';
@@ -239,6 +240,7 @@
 <main>
   <h1>{t('shared.title')}</h1>
 
+  {#if !network.online}<p class="error" role="status">{t('offline.notice')}</p>{/if}
   {#if error}<p class="error" role="alert">{error}</p>{/if}
 
   {#if view === 'busy'}

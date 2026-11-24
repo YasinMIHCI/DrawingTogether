@@ -4,6 +4,7 @@
   import { t } from '../../lib/i18n/t.svelte';
   import Avatar from '../../components/Avatar.svelte';
   import QrCode from './QrCode.svelte';
+  import { play } from '../../lib/sound';
   import type { SharedSession } from '../../net/sharedSession';
 
   let { room, session, onleave, onopen, ondeletesave, primaryLabel, extra, canvasInfo = true }: {
@@ -34,6 +35,13 @@
   const s = $derived.by(() => {
     void tick;
     return { peers: room.peers, state: room.state, isHost: room.isHost, status: room.status };
+  });
+  // Son quand un joueur arrive
+  let count = 0;
+  $effect(() => {
+    const n = s.peers.length;
+    if (count && n > count) play('join');
+    count = n;
   });
   const link = $derived(`${location.origin}${location.pathname}#/${location.hash.includes('/games') ? 'games' : 'shared'}/${room.code}`);
   let copied = $state(false);

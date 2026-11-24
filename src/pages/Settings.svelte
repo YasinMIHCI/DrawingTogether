@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { settings, type ThemePreference } from '../lib/settings.svelte';
+  import { settings, type MotionPreference, type ThemePreference } from '../lib/settings.svelte';
+  import { play } from '../lib/sound';
   import { LOCALES } from '../lib/i18n/i18n.svelte';
   import { t } from '../lib/i18n/t.svelte';
   import { href } from '../lib/router.svelte';
@@ -8,6 +9,7 @@
 
   const options: UiPreference[] = ['auto', 'krita', 'paint', 'mobile'];
   const themes: ThemePreference[] = ['auto', 'light', 'dark'];
+  const motions: MotionPreference[] = ['auto', 'full', 'reduce'];
   const detected = $derived(resolveUi('auto', screen.info));
 </script>
 
@@ -40,6 +42,21 @@
         <label class="choice"><input type="radio" name="theme" value={th} bind:group={settings.theme} /> {t(`theme.${th}`)}</label>
       {/each}
     </div>
+  </section>
+
+  <section>
+    <h2>{t('settings.motion')}</h2>
+    <div class="choices">
+      {#each motions as m (m)}
+        <label class="choice"><input type="radio" name="motion" value={m} bind:group={settings.motion} /> {t(`settings.motion.${m}`)}</label>
+      {/each}
+    </div>
+  </section>
+
+  <section>
+    <h2>{t('settings.sound')}</h2>
+    <label class="choice"><input type="checkbox" bind:checked={settings.sound} onchange={() => play('pop')} /> {t('settings.soundOn')}</label>
+    <p class="hint">{t('settings.offline')}</p>
   </section>
 
   <a href={href('home')}>← {t('nav.back')}</a>

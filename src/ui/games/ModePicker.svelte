@@ -65,7 +65,7 @@
   .card { background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); display: grid; gap: 12px; }
   .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .tabs button { font: inherit; font-weight: 700; padding: 10px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface-2); color: var(--ink-soft); cursor: pointer; }
-  .tabs [aria-selected='true'] { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .tabs [aria-selected='true'] { background: var(--teal); border-color: var(--teal); color: #10201e; }
   .modes { display: grid; gap: 8px; max-height: 420px; overflow-y: auto; padding-right: 4px; }
   .mode { display: flex; gap: 14px; align-items: center; text-align: left; font: inherit; color: inherit; padding: 10px 12px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface-2); cursor: pointer; }
   .mode[aria-pressed='true'] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; background: var(--surface); }

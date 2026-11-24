@@ -4,6 +4,7 @@
   import type { FileActions } from '../common/types';
   import Icon from '../common/Icon.svelte';
   import type { IconName } from '../common/icons';
+  import { navigate } from '../../lib/router.svelte';
 
   let { files, onclose }: { files: FileActions; onclose: () => void } = $props();
   const off = (k: NonNullable<FileActions['disabled']>[number]) => files.disabled?.includes(k) ?? false;
@@ -14,6 +15,7 @@
     { icon: 'import', label: 'file.import', run: () => files.importImage(), off: off('importImage') },
     { icon: 'export', label: 'file.exportPng', run: () => files.exportImage('png') },
     { icon: 'export', label: 'file.exportJpg', run: () => files.exportImage('jpeg') },
+    { icon: 'image', label: 'file.gallery', run: () => navigate('gallery') },
   ];
 </script>
 

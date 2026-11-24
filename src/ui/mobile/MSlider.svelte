@@ -57,7 +57,7 @@
       <input class="m-value" type="text" inputmode="decimal" bind:value={draft} autofocus
         onblur={commit} onkeydown={(e) => e.key === 'Enter' && commit()} aria-label={label} />
     {:else}
-      <button class="m-value" onclick={() => ((draft = format(value)), (editing = true))} aria-label={label}>{format(value)}</button>
+      <button class="m-value" onclick={() => ((draft = format(value)), (editing = true))} aria-label="{label} : {format(value)}">{format(value)}</button>
     {/if}
   {/if}
 </div>

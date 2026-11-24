@@ -9,6 +9,11 @@ export interface RenderOptions {
   cursor: { at: Point; diameter: number } | null;
   /** Dessins par-dessus la toile (sélection, poignées…), appelé avec l'échelle dpr. */
   overlay?: (ctx: CanvasRenderingContext2D) => void;
+  /**
+   * Calques pré-assemblés (performances) : `below` = fond + calques sous le calque actif,
+   * `above` = calques au-dessus (seulement s'ils sont tous en mode normal). Null = dessin calque par calque.
+   */
+  cache?: { below: HTMLCanvasElement | null; above: HTMLCanvasElement | null; activeIndex: number } | null;
 }
 
 let checker: CanvasPattern | null = null;
@@ -65,12 +70,25 @@ export function render(
 
   // Pixels nets quand on zoome fort, lissés sinon
   ctx.imageSmoothingEnabled = view.zoom < 2;
-  for (const layer of doc.layers) {
-    if (!layer.visible || layer.opacity <= 0) continue;
+  const cache = opts.cache;
+  doc.layers.forEach((layer, i) => {
+    if (cache) {
+      if (i < cache.activeIndex && cache.below) {
+        if (i === 0) ctx.drawImage(cache.below, 0, 0);
+        return;
+      }
+      if (i > cache.activeIndex && cache.above) {
+        if (i === cache.activeIndex + 1) ctx.drawImage(cache.above, 0, 0);
+        return;
+      }
+    }
+    if (!layer.visible || layer.opacity <= 0) return;
     ctx.globalAlpha = layer.opacity;
     ctx.globalCompositeOperation = compositeOp(layer.blend);
     ctx.drawImage(layer.surface.canvas, 0, 0);
-  }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  });
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'source-over';
 
@@ -99,12 +117,18 @@ export function render(
  * Dessine les calques visibles (et le fond si demandé) dans `ctx`, en coordonnées du document.
  * Sert au remplissage « tous les calques » et à la pipette.
  */
-export function renderComposite(ctx: CanvasRenderingContext2D, doc: DrawingDocument, withBackground: boolean): void {
+export function renderComposite(
+  ctx: CanvasRenderingContext2D,
+  doc: DrawingDocument,
+  withBackground: boolean,
+  from = 0,
+  to = doc.layers.length,
+): void {
   if (withBackground && doc.background) {
     ctx.fillStyle = doc.background;
     ctx.fillRect(0, 0, doc.width, doc.height);
   }
-  for (const layer of doc.layers) {
+  for (const layer of doc.layers.slice(from, to)) {
     if (!layer.visible || layer.opacity <= 0) continue;
     ctx.globalAlpha = layer.opacity;
     ctx.globalCompositeOperation = compositeOp(layer.blend);

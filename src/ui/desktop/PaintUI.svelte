@@ -97,7 +97,7 @@
     <Dropdown label={t('menu.file')}>
       {#snippet button()}<span class="filebtn">{t('menu.file')}</span>{/snippet}
       {#snippet children(close)}
-        {#each ['file.new', 'file.open', 'file.save', '-', 'file.import', 'file.exportPng', 'file.exportJpg', '-', 'file.home'] as id, i (i)}
+        {#each ['file.new', 'file.open', 'file.save', '-', 'file.import', 'file.exportPng', 'file.exportJpg', '-', 'file.gallery', 'file.home'] as id, i (i)}
           {#if id === '-'}<div class="d-mline"></div>{:else}
             {@const c = commands[id]}
             <button class="d-mitem" disabled={c.enabled ? !c.enabled() : false} onclick={() => (close(), c.run())}><span class="chk"><Icon name={c.icon!} size={15} /></span>{t(c.label)}{#if c.keys}<span class="k">{formatKeys(c.keys[0])}</span>{/if}</button>

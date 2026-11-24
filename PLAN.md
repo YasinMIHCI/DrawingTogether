@@ -146,10 +146,10 @@ L'utilisateur bascule entre « Style Krita » et « Style Paint » dans les rég
 | — | Modes ❓ ci-dessus et suite de la liste | **Reportés** : non implémentés pour l'instant. | ⏸ |
 
 ### Phase 7 — Finitions
-- **T7.1** Galerie locale de mes dessins.
-- **T7.2** Sons et animations d'interface (désactivables).
-- **T7.3** Performances (gros documents, mobiles bas de gamme), tests sur Android/iOS/desktop.
-- **T7.4** Accessibilité de base, mode hors-ligne pour le dessin solo (PWA).
+- ✅ **T7.1** Galerie locale « Mes dessins » : plusieurs dessins avec miniatures, ouvrir, renommer, dupliquer, supprimer, importer un projet.
+- ✅ **T7.2** Sons synthétisés (tours de jeu, chrono, album, discussion, arrivées) et animations, désactivables (Réglages ; animations réduites suivant le système par défaut).
+- ✅ **T7.3** Performances : cache des calques pendant le dessin (×2,3 plus fluide sur une toile 4000×3000 à 8 calques), résolution d'écran plafonnée à 2×, pages chargées à la demande. Testé sur Chromium (ordinateur, téléphone et tablette émulés) ; tests sur vrais appareils Android / iOS à faire de ton côté.
+- ✅ **T7.4** Accessibilité (audit axe-core sans erreur : contrastes, titres, libellés, structure) ; site installable (PWA) et utilisable hors ligne pour le dessin libre et la galerie.
 
 ### Ordre conseillé
 `Phase 0 → Phase 1 (T1.1–T1.6) → Phase 3 (mobile) et Phase 2 (desktop) en parallèle → Phase 4 → Phase 5 → Phase 6 → reste de la Phase 1 → Phase 7`.

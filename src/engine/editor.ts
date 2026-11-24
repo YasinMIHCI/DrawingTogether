@@ -140,8 +140,48 @@ export class Editor {
   }
 
   private changed(): void {
+    // Tout changement autre qu'un trait en cours invalide le cache des calques
+    this.renderVersion++;
     this.requestRender();
     for (const fn of this.listeners) fn();
+  }
+
+  // ---------- Cache des calques (performances) ----------
+
+  private renderVersion = 0;
+  private cache: { version: number; activeIndex: number; below: Surface | null; above: Surface | null; w: number; h: number } | null = null;
+
+  /**
+   * Pendant qu'on dessine, seuls le calque actif et le trait changent : on assemble une fois
+   * les calques du dessous (et ceux du dessus s'ils sont tous en mode normal) au lieu de tous les redessiner.
+   */
+  private layerCache(): { below: HTMLCanvasElement | null; above: HTMLCanvasElement | null; activeIndex: number } | null {
+    const doc = this.doc;
+    const ai = doc.indexOf(doc.activeId);
+    const nBelow = ai;
+    const nAbove = doc.layers.length - ai - 1;
+    if (doc.layers.length < 3 || ai < 0) return null;
+    const c = this.cache;
+    if (c && c.version === this.renderVersion && c.activeIndex === ai && c.w === doc.width && c.h === doc.height) {
+      return { below: c.below?.canvas ?? null, above: c.above?.canvas ?? null, activeIndex: ai };
+    }
+    const reuse = (s: Surface | null | undefined) =>
+      s && s.canvas.width === doc.width && s.canvas.height === doc.height ? s : createSurface(doc.width, doc.height);
+    let below: Surface | null = null;
+    if (nBelow >= 2) {
+      below = reuse(c?.below);
+      below.ctx.clearRect(0, 0, doc.width, doc.height);
+      renderComposite(below.ctx, doc, false, 0, ai);
+    }
+    let above: Surface | null = null;
+    const normalAbove = doc.layers.slice(ai + 1).every((l) => l.blend === 'normal');
+    if (nAbove >= 2 && normalAbove) {
+      above = reuse(c?.above);
+      above.ctx.clearRect(0, 0, doc.width, doc.height);
+      renderComposite(above.ctx, doc, false, ai + 1);
+    }
+    this.cache = { version: this.renderVersion, activeIndex: ai, below, above, w: doc.width, h: doc.height };
+    return below || above ? { below: below?.canvas ?? null, above: above?.canvas ?? null, activeIndex: ai } : null;
   }
 
   /** Pixels d'un calque modifiés par une action terminée (trait, remplissage, annulation…). */
@@ -234,7 +274,8 @@ export class Editor {
     const resize = () => {
       const r = canvas.getBoundingClientRect();
       const prev = { w: this.viewW, h: this.viewH };
-      this.dpr = window.devicePixelRatio || 1;
+      // Au-delà de 2, la différence ne se voit pas mais coûte cher (téléphones à 3×)
+      this.dpr = Math.min(2, window.devicePixelRatio || 1);
       this.viewW = r.width;
       this.viewH = r.height;
       canvas.width = Math.max(1, Math.round(r.width * this.dpr));
@@ -305,6 +346,7 @@ export class Editor {
       workspace: this.workspace,
       cursor: this.hoverAt && size ? { at: this.hoverAt, diameter: size * this.view.zoom } : null,
       overlay: (ctx) => this.drawOverlay(ctx),
+      cache: this.layerCache(),
     });
   }
 

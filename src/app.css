@@ -5,7 +5,8 @@
   --ink: #1f2430;
   --ink-soft: #5b6170;
   --line: #e3d9c8;
-  --accent: #ff6b4a;
+  /* Accent : #cc3f24 = contraste 4,9:1 avec du texte blanc (le corail vif #ff6b4a reste pour le logo) */
+  --accent: #cc3f24;
   --accent-ink: #ffffff;
   --teal: #2bb3a3;
   --sun: #ffc94a;
@@ -21,6 +22,8 @@
     --ink: #f1ede6;
     --ink-soft: #a7abb6;
     --line: #343846;
+    --accent: #ff7a5c;
+    --accent-ink: #1f2430;
     --shadow: 0 2px 0 rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
     color-scheme: dark;
   }
@@ -32,6 +35,8 @@
     --ink: #f1ede6;
     --ink-soft: #a7abb6;
     --line: #343846;
+    --accent: #ff7a5c;
+    --accent-ink: #1f2430;
     --shadow: 0 2px 0 rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
     color-scheme: dark;
   }
@@ -55,4 +60,12 @@ button, input, select { font: inherit; color: inherit; }
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+}
+
+/* Animations réduites (réglage du site ou du système) */
+:root[data-motion='reduce'] *, :root[data-motion='reduce'] *::before, :root[data-motion='reduce'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
 }

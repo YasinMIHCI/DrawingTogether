@@ -26,3 +26,9 @@ Le projet et sa clé publique sont dans `src/net/config.ts`.
 La **sauvegarde en ligne des toiles partagées** utilise Supabase Storage. À faire une seule fois :
 tableau de bord Supabase du projet → **SQL Editor** → **New query** → coller le contenu de
 [`supabase/setup.sql`](supabase/setup.sql) → **Run**. Sans cette étape, tout fonctionne sauf la sauvegarde en ligne.
+
+## Hors ligne / application
+
+La version publiée enregistre un *service worker* (généré à la construction depuis `src/sw-template.js`) :
+le dessin libre et la galerie fonctionnent sans connexion, et le site peut être installé
+(« Ajouter à l'écran d'accueil » sur téléphone). La toile partagée et les jeux ont besoin d'Internet.

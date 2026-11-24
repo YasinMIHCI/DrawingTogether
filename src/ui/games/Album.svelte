@@ -6,6 +6,7 @@
   import { t } from '../../lib/i18n/t.svelte';
   import Avatar from '../../components/Avatar.svelte';
   import EntryView from './EntryView.svelte';
+  import { play } from '../../lib/sound';
 
   let { game, tick }: { game: Game; tick: number } = $props();
   const s = $derived.by(() => {
@@ -78,6 +79,16 @@
     downloadBlob(await flipbookGif(entries.filter((e) => e.kind === 'image')), timestampedName(`flipbook-${s.pos.chain + 1}`, '.gif'));
   }
   const EMOJIS = ['👍', '😂', '😮', '❤️', '🔥', '👏'];
+  // Petit son à chaque révélation et à chaque réaction
+  let lastPos = '';
+  let lastReactions = 0;
+  $effect(() => {
+    const pos = `${s.pos.chain}:${s.pos.step}`;
+    if (lastPos && pos !== lastPos) play('pop');
+    lastPos = pos;
+    if (s.reactions.length > lastReactions) play('tap');
+    lastReactions = s.reactions.length;
+  });
 </script>
 
 <section class="album">

@@ -9,6 +9,7 @@
   import { t } from '../lib/i18n/t.svelte';
   import type { Key } from '../lib/i18n/i18n.svelte';
   import ProfileCard from '../components/ProfileCard.svelte';
+  import { network } from '../lib/online.svelte';
   import GameRoom from '../ui/games/GameRoom.svelte';
 
   const SETTINGS: RoomSettings = { width: 1, height: 1, background: null, locked: false, passwordHash: null };
@@ -85,6 +86,7 @@
 </script>
 
 <main>
+  {#if !network.online}<p class="error" role="status">{t('offline.notice')}</p>{/if}
   {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if view === 'busy'}
     <p class="busy" role="status">{t('shared.connecting')}</p>

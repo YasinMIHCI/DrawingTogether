@@ -4,11 +4,16 @@ import type { Locale } from './i18n/i18n.svelte';
 import { detectLocale } from './i18n/i18n.svelte';
 
 export type ThemePreference = 'auto' | 'light' | 'dark';
+export type MotionPreference = 'auto' | 'full' | 'reduce';
 
 export interface Settings {
   locale: Locale;
   ui: UiPreference;
   theme: ThemePreference;
+  /** Petits sons de l'interface (jeux, discussion…) */
+  sound: boolean;
+  /** Animations : auto = selon le réglage « réduire les animations » du système */
+  motion: MotionPreference;
   nickname: string;
   avatar: number;
 }
@@ -20,6 +25,8 @@ export const settings: Settings = $state(
     locale: detectLocale(),
     ui: 'auto',
     theme: 'auto',
+    sound: true,
+    motion: 'auto',
     nickname: '',
     avatar: Math.floor(Math.random() * 12),
   }),

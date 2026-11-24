@@ -51,6 +51,7 @@ export function createCommands(editor: Editor, files: FileActions, ui: UiHooks):
     { id: 'file.exportPng', label: 'file.exportPng', keys: ['Mod+Shift+E'], icon: 'export', run: () => files.exportImage('png') },
     { id: 'file.exportJpg', label: 'file.exportJpg', icon: 'export', run: () => files.exportImage('jpeg') },
     { id: 'file.home', label: 'm.home', icon: 'home', run: () => navigate('home') },
+    { id: 'file.gallery', label: 'file.gallery', icon: 'image', run: () => navigate('gallery') },
     // Édition
     { id: 'edit.undo', label: 'draw.undo', keys: ['Mod+Z'], displayOnly: true, icon: 'undo', run: () => e.undo(), enabled: () => e.history.canUndo },
     { id: 'edit.redo', label: 'draw.redo', keys: ['Mod+Shift+Z', 'Mod+Y'], displayOnly: true, icon: 'redo', run: () => e.redo(), enabled: () => e.history.canRedo },

@@ -30,7 +30,7 @@
   const fromPos = (p: number) => 0.02 * Math.pow(64 / 0.02, p);
 </script>
 
-<footer class="status">
+<div class="status">
   <span title={t('d.status.pos')}>{pos ? `${pos.x}, ${pos.y} px` : '—'}</span>
   {#if s.sel}<span title={t('d.status.selection')}>⬚ {s.sel}</span>{/if}
   <span title={t('d.status.size')}>{s.w} × {s.h} px</span>
@@ -43,7 +43,7 @@
     oninput={(e) => editor.setZoom(fromPos(+e.currentTarget.value / 1000))} />
   <button class="d-ibtn" onclick={() => editor.setZoom(s.zoom * 1.25)} aria-label={t('cmd.zoomIn')}><Icon name="zoomIn" size={15} /></button>
   <button class="zoom" onclick={() => editor.setZoom(1)} title={t('draw.zoom100')}>{Math.round(s.zoom * 100)} %</button>
-</footer>
+</div>
 
 <style>
   .status { display: flex; align-items: center; gap: 14px; height: 26px; padding: 0 8px; background: var(--d-panel-2); border-top: 1px solid var(--d-line); color: var(--d-soft); font-size: 12px; font-variant-numeric: tabular-nums; }

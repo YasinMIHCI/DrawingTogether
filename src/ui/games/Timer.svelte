@@ -1,12 +1,20 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { play } from '../../lib/sound';
   /** Barre de temps restant ; appelle `onend` une fois à zéro. */
   let { deadline, total, onend }: { deadline: number | null; total: number; onend?: () => void } = $props();
   let now = $state(Date.now());
   let fired = false;
+  let lastTick = -1;
   onMount(() => {
     const id = setInterval(() => {
       now = Date.now();
+      // Tic-tac pendant les 5 dernières secondes
+      const sec = deadline ? Math.ceil((deadline - now) / 1000) : -1;
+      if (sec > 0 && sec <= 5 && sec !== lastTick) {
+        lastTick = sec;
+        play('tick');
+      }
       if (deadline && now >= deadline && !fired) {
         fired = true;
         onend?.();

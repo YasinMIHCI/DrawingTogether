@@ -6,6 +6,7 @@
   import { t } from '../../lib/i18n/t.svelte';
   import Avatar from '../../components/Avatar.svelte';
   import MiniMap from './MiniMap.svelte';
+  import { play } from '../../lib/sound';
 
   /** Barre de la salle, posée sur la toile : joueurs, code, discussion, vue d'ensemble, retour à la salle. */
   let { session, editor, onlobby }: { session: SharedSession; editor: Editor; onlobby: () => void } = $props();
@@ -22,6 +23,13 @@
       peers: session.room.peers, hostId: session.room.state.hostId, chat: session.chat, unread: session.unread,
       synced: session.synced, reconnecting: session.room.status === 'reconnecting',
     };
+  });
+  // Son quand un autre joueur écrit
+  let seen = 0;
+  $effect(() => {
+    const n = s.chat.length;
+    if (n > seen && s.chat[n - 1]?.from !== session.me) play('message');
+    seen = n;
   });
   let chatOpen = $state(false);
   let mapOpen = $state(false);

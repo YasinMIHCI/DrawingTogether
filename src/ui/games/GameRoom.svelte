@@ -10,6 +10,7 @@
   import DrawStep from './DrawStep.svelte';
   import Waiting from './Waiting.svelte';
   import Album from './Album.svelte';
+  import { play } from '../../lib/sound';
 
   let { room, onleave }: { room: Room; onleave: () => void } = $props();
   const game = untrack(() => new Game(room));
@@ -20,6 +21,16 @@
     return () => (a(), b());
   });
   onDestroy(() => game.dispose());
+
+  // Sons : début de tour (si on a quelque chose à faire), fin de partie
+  let lastStep = '';
+  $effect(() => {
+    const step = `${s.id}-${s.phase}-${s.round}`;
+    if (step === lastStep) return;
+    lastStep = step;
+    if (s.phase === 'play' && s.task && !s.submitted) play('start');
+    else if (s.phase === 'album') play('end');
+  });
 
   const s = $derived.by(() => {
     void tick;
