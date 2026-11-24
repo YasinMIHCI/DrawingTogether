@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Game } from '../../games/game';
   import { t } from '../../lib/i18n/t.svelte';
-  import Avatar from '../../components/Avatar.svelte';
+  import PlayerAvatar from '../../components/PlayerAvatar.svelte';
   import { chainFor } from '../../games/modes';
   import Timer from './Timer.svelte';
 
@@ -23,7 +23,7 @@
   <Timer deadline={game.deadline} {total} />
   <ul>
     {#each s.players as p (p.id)}
-      <li class:done={p.done} class:away={!p.here}><Avatar id={p.avatar} url={p.avatarUrl} size={44} /><span>{p.nickname}</span>{#if p.done}<b>✓</b>{/if}</li>
+      <li class:done={p.done} class:away={!p.here}><PlayerAvatar avatar={p.avatar} url={p.avatarUrl} bouille={p.bouille} size={44} expr={!p.here ? 'sad' : p.done ? 'happy' : 'neutral'} /><span>{p.nickname}</span>{#if p.done}<b>✓</b>{/if}</li>
     {/each}
   </ul>
   {#if s.host}<button class="btn" onclick={() => game.finishRound()}>{t('games.skip')}</button>{/if}

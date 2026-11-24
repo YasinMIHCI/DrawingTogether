@@ -5,6 +5,8 @@ export interface PeerInfo {
   avatar: number;
   /** Avatar importé (compte), sinon on dessine l'avatar n° `avatar` */
   avatarUrl?: string | null;
+  /** Bouille du joueur (JSON, sans peinture intégrée) */
+  bouille?: string | null;
   /** Heure d'arrivée dans la salle (sert à choisir le nouvel hôte). */
   joinedAt: number;
 }

@@ -175,9 +175,9 @@ Choix : couleur principale verte vive (teinte propre au site), barre de navigati
 - ✅ **T10.1** Moteur SVG en couches : visage, teint, coiffure avant/arrière, sourcils, yeux, nez, bouche, oreilles, barbe, moustache, lunettes, joues/rides, corps + vêtement ; réglages taille/hauteur/écart/rotation/miroir ; Bouille = petit JSON.
 - ✅ **T10.2** Bibliothèque de parties (≈ 12 visages, 40 coiffures, 30 yeux, 20 sourcils, 15 nez, 25 bouches, barbes, moustaches, lunettes) + palettes.
 - ✅ **T10.3** Écran de création : grand aperçu à gauche (légère rotation de caméra), onglets + grille d'icônes à droite, curseurs, annuler/rétablir, « Au hasard » ; vue buste ou corps entier.
-- **T10.4** Peinture sur le visage : éditeur pixel 256×256 avec grille, aperçu en direct, palette verticale, symétrie ; copier la peinture d'un ami, retirer.
+- ✅ **T10.4** Peinture sur le visage : éditeur pixel 256×256 avec grille, aperçu en direct, palette verticale, symétrie ; copier la peinture d'un ami, retirer.
 - ✅ **T10.5** Étape « Crée ta Bouille » à l'inscription ; modifiable depuis le profil ; aussi possible sans compte (gardée sur l'appareil).
-- **T10.6** Expressions (neutre, contente, surprise, triste) utilisées dans le fil, les jeux et l'accueil.
+- ✅ **T10.6** Expressions (neutre, contente, surprise, triste) utilisées dans le fil, les jeux et l'accueil.
 - **T10.7** Stockage : colonne `avatar` (JSON) dans `profiles`, peinture en PNG dans le bucket `avatars`, rendu PNG en cache.
 
 Ordre : T9.1–T9.2 → T10.1–T10.3 → T10.5, T9.4, T9.6 → T10.4 → T9.3 → T10.6, T9.5, T9.7, T9.9 → T9.8.

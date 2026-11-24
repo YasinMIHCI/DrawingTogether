@@ -36,7 +36,7 @@ class SupabaseTransport implements Transport {
       const peers: PeerInfo[] = [];
       for (const metas of Object.values(state)) {
         const m = metas[metas.length - 1];
-        if (m?.id) peers.push({ id: m.id, nickname: m.nickname, avatar: m.avatar, avatarUrl: m.avatarUrl ?? null, joinedAt: m.joinedAt });
+        if (m?.id) peers.push({ id: m.id, nickname: m.nickname, avatar: m.avatar, avatarUrl: m.avatarUrl ?? null, bouille: typeof m.bouille === 'string' && m.bouille.length < 4000 ? m.bouille : null, joinedAt: m.joinedAt });
       }
       for (const fn of this.pres) fn(peers);
     });

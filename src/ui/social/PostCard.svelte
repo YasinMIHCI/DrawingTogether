@@ -6,6 +6,11 @@
   import { t } from '../../lib/i18n/t.svelte';
   import Avatar from '../../components/Avatar.svelte';
   import PostImage from './PostImage.svelte';
+  import { parseBouille } from '../../bouille/model';
+  import { renderBouille } from '../../bouille/render';
+
+  // Ma Bouille sur le bouton « Ouais ! » : contente quand j'ai aimé
+  const myB = $derived(parseBouille(settings.bouille));
 
   /** Publication façon « bulle » : avatar à gauche, étiquette du pseudo, contenu, barre « Ouais ! ». */
   let { post, ondelete, compact = false }: { post: Post; ondelete?: () => void; compact?: boolean } = $props();
@@ -62,7 +67,8 @@
       {#if post.image_path}<PostImage path={post.image_path} width={post.width} height={post.height} alt={post.title} />{/if}
       <div class="actions">
         <button class="yeah" class:on={liked} aria-pressed={liked} onclick={toggleLike} disabled={mine} title={mine ? '' : t('feed.like')}>
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="2"/><path d="M8.5 13.5q3.5 4 7 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="10" r="1.3" fill="currentColor"/><circle cx="15" cy="10" r="1.3" fill="currentColor"/></svg>
+          {#if myB}<span class="me">{@html renderBouille(myB, { view: 'head', expr: liked ? 'happy' : 'neutral', viewBox: '30 50 140 130' })}</span>
+          {:else}<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="2"/><path d="M8.5 13.5q3.5 4 7 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="10" r="1.3" fill="currentColor"/><circle cx="15" cy="10" r="1.3" fill="currentColor"/></svg>{/if}
           {t('feed.like')}
         </button>
         <span class="grow"></span>
@@ -118,6 +124,8 @@
   .actions { display: flex; align-items: center; gap: 6px; border-top: 1px solid var(--line); margin: 0 -14px; padding: 6px 10px 0; }
   .grow { flex: 1; }
   .yeah { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-weight: 800; font-size: 0.88rem; padding: 5px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-soft); cursor: pointer; }
+  .me { width: 24px; height: 22px; display: block; }
+  .me :global(svg) { width: 100%; height: 100%; }
   .yeah.on { background: var(--green-soft); color: var(--accent); border-color: var(--green-bright); }
   .yeah:disabled { opacity: 0.5; cursor: default; }
   .count { display: inline-flex; align-items: center; gap: 4px; font: inherit; font-size: 0.88rem; font-weight: 700; color: var(--ink-soft); background: none; border: 0; padding: 4px 6px; border-radius: 8px; }

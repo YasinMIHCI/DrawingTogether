@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { parseBouille, randomBouille, seeded, type BouilleData } from '../../bouille/model';
-  import { renderBouille } from '../../bouille/render';
+  import { renderBouille, type Expression } from '../../bouille/render';
   import { feed, friendState, postImage, profilesWithBouille, type Post } from '../../social/api';
   import { auth } from '../../social/auth.svelte';
   import { settings } from '../../lib/settings.svelte';
@@ -36,7 +36,7 @@
     dur: number;
     moving: boolean;
     next: number;
-    svg: [string, string];
+    emo: Expression;
     bubble: Post | null;
   }
 
@@ -53,7 +53,7 @@
     const s = spot();
     return {
       key, b, name, ...s, dir: Math.random() < 0.5 ? 1 : -1, dur: 0, moving: false, next: Date.now() + rand(300, 4000), bubble: null,
-      svg: [renderBouille(b, { view: 'full', turn: -0.7 }), renderBouille(b, { view: 'full', turn: 0.7 })], ...extra,
+      emo: 'neutral', ...extra,
     };
   }
 
@@ -78,6 +78,7 @@
     // Passants (toujours les mêmes)
     const total = narrow ? 9 : 15;
     for (let i = 0; list.length < total; i++) list.push(walker(`v${i}`, randomBouille(seeded(1000 + i)), ''));
+    art.clear();
     walkers = list;
     posts = friendPosts;
   }
@@ -85,10 +86,25 @@
   let posts: Post[] = [];
   let bubbleIndex = 0;
 
+  // Dessins mis en cache : (Bouille, sens, expression)
+  const art = new Map<string, string>();
+  function svgOf(w: Walker): string {
+    const k = `${w.key}|${w.dir}|${w.emo}`;
+    let s = art.get(k);
+    if (!s) art.set(k, (s = renderBouille(w.b, { view: 'full', turn: w.dir * 0.7, expr: w.emo })));
+    return s;
+  }
+  const EMOTES: Expression[] = ['happy', 'surprised', 'wink', 'happy'];
+
   function step() {
     const now = Date.now();
     if (reducedMotion()) return;
     for (const w of walkers) {
+      // Petite réaction de temps en temps quand on est à l'arrêt
+      if (!w.moving && !w.bubble && w.emo === 'neutral' && Math.random() < 0.03) {
+        w.emo = EMOTES[Math.floor(Math.random() * EMOTES.length)];
+        setTimeout(() => (w.emo = 'neutral'), 2200);
+      }
       if (now < w.next) continue;
       const s = spot();
       const dist = Math.hypot(s.x - w.x, (s.y - w.y) * 0.7);
@@ -103,13 +119,14 @@
   }
 
   async function nextBubble() {
-    for (const w of walkers) w.bubble = null;
+    for (const w of walkers) if (w.bubble) (w.bubble = null), (w.emo = 'neutral');
     const usable = posts.filter((p) => walkers.some((w) => w.key === p.owner_id));
     if (!usable.length) return;
     const p = usable[bubbleIndex++ % usable.length];
     const w = walkers.find((x) => x.key === p.owner_id)!;
     if (p.image_path && !bubbleImg[p.id]) bubbleImg[p.id] = await postImage(p.image_path).catch(() => '');
     w.bubble = p;
+    w.emo = 'happy';
   }
 
   onMount(() => {
@@ -158,7 +175,7 @@
         </a>
       {/if}
       {#if w.me || w.username}<span class="name">{w.name}</span>{/if}
-      <div class="body">{@html w.svg[w.dir === 1 ? 1 : 0]}</div>
+      <div class="body">{@html svgOf(w)}</div>
     </div>
   {/each}
 </section>

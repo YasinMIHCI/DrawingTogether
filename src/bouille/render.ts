@@ -1,4 +1,4 @@
-import { CLOTH, EYE, GLASS, HAIR, LIP, PANTS, SKIN, type BouilleData, type Category, type Part } from './model';
+import { CLOTH, EYE, GLASS, HAIR, LIP, PAINT_BOX, PANTS, SKIN, isSafePaint, type BouilleData, type Category, type Part } from './model';
 
 /**
  * Dessin d'une Bouille en SVG (chaîne). Repère : tête centrée en (100, 100), crâne de 38 à 162 en x,
@@ -13,7 +13,26 @@ export interface RenderOptions {
   turn?: number;
   /** N'afficher qu'une partie (vignettes du créateur). */
   only?: Category;
+  /** Expression du visage */
+  expr?: Expression;
+  /** Cadrage personnalisé (x y largeur hauteur) */
+  viewBox?: string;
+  /** Ne pas afficher la peinture du visage (fond de l'éditeur de peinture) */
+  noPaint?: boolean;
 }
+
+export type Expression = 'neutral' | 'happy' | 'surprised' | 'sad' | 'angry' | 'wink';
+export const EXPRESSIONS: Expression[] = ['neutral', 'happy', 'surprised', 'sad', 'angry', 'wink'];
+
+/** Changements apportés par chaque expression : bouche imposée, sourcils (hauteur, rotation), yeux (échelle verticale). */
+const EXPR: Record<Expression, { mouth?: number; browY: number; browR: number; eyeY: number; eyeK: number }> = {
+  neutral: { browY: 0, browR: 0, eyeY: 1, eyeK: 1 },
+  happy: { mouth: 3, browY: -2, browR: 0, eyeY: 0.8, eyeK: 1 },
+  surprised: { mouth: 15, browY: -5, browR: 0, eyeY: 1.18, eyeK: 1.1 },
+  sad: { mouth: 2, browY: 0, browR: -3, eyeY: 0.9, eyeK: 1 },
+  angry: { mouth: 13, browY: 2, browR: 3, eyeY: 0.85, eyeK: 1 },
+  wink: { mouth: 9, browY: -1, browR: 0, eyeY: 1, eyeK: 1 },
+};
 
 // ---------- Couleurs ----------
 
@@ -368,6 +387,7 @@ export function renderBouille(b: BouilleData, opt: RenderOptions = {}): string {
   const hairC = HAIR[b.hair.c] ?? HAIR[0];
   const face = facePath(b.face.s);
   const show = (c: Category) => !only || only === c;
+  const ex = EXPR[opt.expr ?? 'neutral'] ?? EXPR.neutral;
 
   // Positions (en crans → pixels)
   const eyeY = 112 + b.eyes.y * 2.5;
@@ -404,21 +424,34 @@ export function renderBouille(b: BouilleData, opt: RenderOptions = {}): string {
       `<radialGradient id="${id}s" cx="50%" cy="38%" r="70%"><stop offset=".6" stop-color="${skin}"/><stop offset="1" stop-color="${shade(skin, -0.09)}"/></radialGradient>` +
         `<path d="${face.d}" fill="url(#${id}s)" stroke="${skinLine}" stroke-width="1.8"/>`,
     );
+    if (b.paint && isSafePaint(b.paint) && !opt.noPaint && (!only || only === 'face')) {
+      parts.push(
+        `<clipPath id="${id}p"><path d="${face.d}"/></clipPath><image href="${b.paint}" x="${PAINT_BOX.x}" y="${PAINT_BOX.y}" width="${PAINT_BOX.s}" height="${PAINT_BOX.s}" ` +
+          `preserveAspectRatio="none" clip-path="url(#${id}p)" style="image-rendering:pixelated"/>`,
+      );
+    }
   }
   const feats: string[] = [];
   if (show('mark') && only !== 'face') feats.push(mark(b.mark, skin, eyeY, eyeDx));
   if (show('beard') && only !== 'face') feats.push(beard(b.beard.s, hairC, face.d, face.chin, id));
-  if (show('eyes')) feats.push(pairOf((side) => eye(b.eyes.s, EYE[b.eyes.c] ?? EYE[0], `${id}e${side}`), eyeDx, eyeY, b.eyes.z + 1.4, b.eyes.r));
-  if (show('brows')) feats.push(pairOf(() => brow(b.brows.s, HAIR[b.brows.c] ?? HAIR[0]), browDx, browY, b.brows.z, b.brows.r));
+  if (show('eyes')) {
+    feats.push(pairOf((side) => {
+      if (opt.expr === 'wink' && side === 1) return `<path d="M-9 2Q0 -8 9 2" fill="none" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`;
+      const inner = eye(b.eyes.s, EYE[b.eyes.c] ?? EYE[0], `${id}e${side}`);
+      return ex.eyeY === 1 && ex.eyeK === 1 ? inner : `<g transform="scale(${ex.eyeK} ${ex.eyeY * ex.eyeK})">${inner}</g>`;
+    }, eyeDx, eyeY, b.eyes.z + 1.4, b.eyes.r));
+  }
+  if (show('brows')) feats.push(pairOf(() => brow(b.brows.s, HAIR[b.brows.c] ?? HAIR[0]), browDx, browY + ex.browY, b.brows.z, b.brows.r + ex.browR));
   if (show('nose')) feats.push(`<g transform="translate(${100 + turn * 3} ${noseY}) scale(${k(b.nose.z)})">${nose(b.nose.s, skin)}</g>`);
-  if (show('mouth')) feats.push(`<g transform="translate(100 ${mouthY}) scale(${k(b.mouth.z)})">${mouth(b.mouth.s, LIP[b.mouth.c] ?? LIP[0])}</g>`);
+  if (show('mouth')) feats.push(`<g transform="translate(100 ${mouthY}) scale(${k(b.mouth.z)})">${mouth(ex.mouth ?? b.mouth.s, LIP[b.mouth.c] ?? LIP[0])}</g>`);
   if (show('must')) feats.push(`<g transform="translate(100 ${mustY}) scale(${k(b.must.z)})">${mustache(b.must.s, hairC)}</g>`);
   if (feats.length) parts.push(`<g transform="translate(${tx} 0)">${feats.join('')}</g>`);
   if (!only || only === 'hair') parts.push(`<g transform="translate(${turn * 3} 0) ${flip}">${hair.front}</g>`);
   if (show('glasses')) parts.push(`<g transform="translate(${100 + tx} ${glassY}) scale(${k(b.glasses.z)})">${glasses(b.glasses.s, GLASS[b.glasses.c] ?? GLASS[0], eyeDx / k(b.glasses.z))}</g>`);
 
   let vb: string;
-  if (only && VIEWBOX[only]) vb = VIEWBOX[only]!;
+  if (opt.viewBox) vb = opt.viewBox;
+  else if (only && VIEWBOX[only]) vb = VIEWBOX[only]!;
   else if (only === 'hair') vb = '-14 -16 228 240';
   else if (view === 'full' || only === 'body') vb = `-30 -10 260 ${bod.bottom + 16}`;
   else if (view === 'head') vb = '14 0 172 196';
@@ -427,8 +460,10 @@ export function renderBouille(b: BouilleData, opt: RenderOptions = {}): string {
 }
 
 /** Image PNG (fond transparent ou coloré) d'une Bouille, pour l'avatar du compte. */
-export async function bouillePng(b: BouilleData, size = 256, background: string | null = null, view: View = 'bust'): Promise<Blob> {
-  const svg = renderBouille(b, { view }).replace('width="100%" height="100%"', `width="${size}" height="${size}"`);
+export async function bouillePng(b: BouilleData, size = 256, background: string | null = null, view: View = 'bust', expr: Expression = 'neutral'): Promise<Blob> {
+  // Une image SVG ouverte comme <img> ne charge rien d'extérieur : la peinture doit être intégrée
+  if (b.paint?.startsWith('https:')) b = { ...b, paint: await toDataUrl(b.paint).catch(() => undefined) };
+  const svg = renderBouille(b, { view, expr }).replace('width="100%" height="100%"', `width="${size}" height="${size}"`);
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
   try {
     const img = new Image();
@@ -446,4 +481,15 @@ export async function bouillePng(b: BouilleData, size = 256, background: string 
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+/** Télécharge une image et la renvoie en data URL. */
+export async function toDataUrl(url: string): Promise<string> {
+  const blob = await (await fetch(url)).blob();
+  return await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result as string);
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(blob);
+  });
 }

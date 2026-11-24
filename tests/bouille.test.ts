@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { COUNT, defaultBouille, parseBouille, randomBouille, stringifyBouille } from '../src/bouille/model';
-import { renderBouille } from '../src/bouille/render';
+import { EXPRESSIONS, renderBouille } from '../src/bouille/render';
+import { isSafePaint, presenceBouille } from '../src/bouille/model';
 
 describe('Bouille', () => {
   it('relit une Bouille enregistrée à l’identique', () => {
@@ -27,5 +28,18 @@ describe('Bouille', () => {
         expect(svg).not.toContain('NaN');
       }
     }
+  });
+
+  it('n’accepte que des peintures sûres', () => {
+    expect(isSafePaint('data:image/png;base64,iVBORw0KGgo=')).toBe(true);
+    expect(isSafePaint('https://x.supabase.co/storage/v1/object/public/avatars/abc/paint.png?v=12')).toBe(true);
+    expect(isSafePaint('data:image/svg+xml;base64,AAAA')).toBe(false);
+    expect(isSafePaint('https://evil.com/a.png" onload="x')).toBe(false);
+    expect(parseBouille({ paint: 'javascript:alert(1)' })!.paint).toBeUndefined();
+  });
+  it('dessine chaque expression et retire la peinture locale pour les salles', () => {
+    const b = { ...defaultBouille(), paint: 'data:image/png;base64,iVBORw0KGgo=' };
+    for (const e of EXPRESSIONS) expect(renderBouille(b, { expr: e })).toContain('<image');
+    expect(JSON.parse(presenceBouille(stringifyBouille(b))!).paint).toBeUndefined();
   });
 });

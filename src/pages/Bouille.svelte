@@ -12,6 +12,8 @@
   import type { Key } from '../lib/i18n/i18n.svelte';
   import { auth, saveBouille } from '../social/auth.svelte';
   import { router } from '../lib/router.svelte';
+  import FacePaint from '../ui/bouille/FacePaint.svelte';
+  import { EXPRESSIONS, type Expression } from '../bouille/render';
 
   /** Créateur de Bouille : aperçu à gauche, parties et réglages à droite. */
   const CATS: Category[] = ['face', 'hair', 'brows', 'eyes', 'nose', 'mouth', 'beard', 'must', 'glasses', 'mark', 'body'];
@@ -27,6 +29,8 @@
   let view = $state<View>('bust');
   let turn = $state(0);
   let busy = $state(false);
+  let painting = $state(false);
+  let expr = $state<Expression>('neutral');
   let error = $state<string | null>(null);
 
   onMount(() => {
@@ -56,7 +60,7 @@
   }
 
   const partOf = (c: Category) => b[c as Exclude<Category, 'body'>] as Part;
-  const preview = $derived(renderBouille(b, { view, turn }));
+  const preview = $derived(renderBouille(b, { view, turn, expr }));
 
   /** Vignette d'un modèle de la partie (réglages remis à zéro pour bien la voir). */
   function thumb(c: Category, s: number): string {
@@ -88,7 +92,7 @@
     settings.bouille = stringifyBouille(b);
     if (auth.userId) {
       try {
-        await saveBouille(settings.bouille, await bouillePng(b, 256, '#f4efe2'));
+        settings.bouille = await saveBouille(settings.bouille, await bouillePng(b, 256, '#f4efe2'));
       } catch {
         error = t('bou.saveError');
         busy = false;
@@ -133,6 +137,13 @@
       {@html preview}
     </div>
     <button class="reset" onclick={() => (turn = 0)} disabled={turn === 0}>⟲ {t('bou.resetView')}</button>
+    <div class="exprs" role="group" aria-label={t('bou.expr')}>
+      {#each EXPRESSIONS as e (e)}
+        <button class:on={expr === e} aria-pressed={expr === e} title={t(`bou.expr.${e}` as Key)} aria-label={t(`bou.expr.${e}` as Key)} onclick={() => (expr = e)}>
+          {@html renderBouille(b, { view: 'head', expr: e, viewBox: '34 62 132 116' })}
+        </button>
+      {/each}
+    </div>
     <p class="hint">{t('bou.hint')}</p>
     {#if error}<p class="error" role="alert">{error}</p>{/if}
     {#if welcome}<p class="welcome">{t('bou.welcome')}</p>{/if}
@@ -158,6 +169,12 @@
             </button>
           {/each}
         </div>
+        {#if cat === 'face'}
+          <div class="paint-row">
+            <button class="act primary" onclick={() => (painting = true)}>🖌 {b.paint ? t('paint.edit') : t('paint.add')}</button>
+            {#if b.paint}<button class="act" onclick={() => edit(() => (b.paint = undefined))}>{t('paint.remove')}</button>{/if}
+          </div>
+        {/if}
         {#if cat === 'hair'}
           <label class="check"><input type="checkbox" checked={b.hair.f} onchange={() => edit(() => (b.hair.f = !b.hair.f))} /> {t('bou.flip')}</label>
         {/if}
@@ -250,6 +267,13 @@
     border: 6px solid #f2dfae; display: grid; place-items: center; overflow: hidden;
   }
   .preview :global(svg) { width: 100%; height: 100%; max-height: 100%; }
+  .exprs { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .exprs button { width: 48px; height: 44px; padding: 2px; border: 0; border-radius: 12px; background: #fff; cursor: pointer; box-shadow: 0 3px 0 rgba(0, 0, 0, 0.1); }
+  .exprs button.on { background: var(--orange); }
+  .exprs :global(svg) { width: 100%; height: 100%; background: #fff; border-radius: 9px; }
+  .paint-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .act { border: 0; border-radius: 14px; padding: 10px 16px; font: inherit; font-weight: 800; background: #fff; color: var(--ink-b); box-shadow: 0 3px 0 rgba(0, 0, 0, 0.1); cursor: pointer; }
+  .act.primary { background: linear-gradient(#f6a83a, var(--orange)); color: #fff; }
   .reset { justify-self: start; margin-top: 10px; border: 0; background: rgba(255, 255, 255, 0.7); border-radius: 12px; padding: 8px 12px; font: inherit; font-weight: 700; color: var(--ink-b); cursor: pointer; }
   .reset:disabled { opacity: 0.5; cursor: default; }
   .hint { margin: 6px 2px 0; font-size: 0.85rem; color: #7a6a4a; }
@@ -290,6 +314,8 @@
     .maker { grid-template-columns: 1fr; grid-template-rows: auto 34vh 1fr; }
     .stage { padding: 8px 10px 0; grid-template-rows: 1fr auto; }
     .hint { display: none; }
+    .exprs { position: absolute; top: 14px; right: 16px; flex-direction: column; gap: 4px; margin: 0; }
+    .exprs button { width: 36px; height: 32px; }
     .reset { position: absolute; left: 18px; bottom: 8px; margin: 0; padding: 4px 8px; font-size: 0.8rem; }
     .panel-side { padding: 8px 10px 0; }
     .tool { height: 44px; min-width: 44px; }
@@ -304,3 +330,7 @@
     .grid { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; }
   }
 </style>
+
+{#if painting}
+  <FacePaint bouille={b} oncancel={() => (painting = false)} onsave={(p) => { edit(() => (b.paint = p ?? undefined)); painting = false; }} />
+{/if}

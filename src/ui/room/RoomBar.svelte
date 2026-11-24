@@ -4,7 +4,7 @@
   import type { SharedSession } from '../../net/sharedSession';
   import { peerColor } from '../../net/sharedSession';
   import { t } from '../../lib/i18n/t.svelte';
-  import Avatar from '../../components/Avatar.svelte';
+  import PlayerAvatar from '../../components/PlayerAvatar.svelte';
   import MiniMap from './MiniMap.svelte';
   import { play } from '../../lib/sound';
 
@@ -58,7 +58,7 @@
     <div class="peers" aria-label={t('room.players')}>
       {#each s.peers as p (p.id)}
         <span class="peer" style:--c={peerColor(p.avatar)} title={p.nickname}>
-          <Avatar id={p.avatar} url={p.avatarUrl} size={26} />
+          <PlayerAvatar avatar={p.avatar} url={p.avatarUrl} bouille={p.bouille} size={26} />
           {#if p.id === s.hostId}<span class="crown">👑</span>{/if}
         </span>
       {/each}

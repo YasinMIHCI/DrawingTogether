@@ -4,7 +4,7 @@
   import { chainEntries, composeChain, composeStack, entryImage, flipbookGif } from '../../games/media';
   import { downloadBlob, timestampedName } from '../../lib/download';
   import { t } from '../../lib/i18n/t.svelte';
-  import Avatar from '../../components/Avatar.svelte';
+  import PlayerAvatar from '../../components/PlayerAvatar.svelte';
   import EntryView from './EntryView.svelte';
   import { play } from '../../lib/sound';
 
@@ -96,7 +96,7 @@
     <h2>{t('games.album')} — {t(mode.name)}</h2>
     {#if mode.result !== 'single'}
       {@const starter = author(s.pos.chain, 0)}
-      <p class="who"><Avatar id={starter?.avatar ?? 0} url={starter?.avatarUrl} size={32} /> {t('games.chainOf', { name: starter?.nickname ?? '?' })} · {s.pos.chain + 1} / {n}</p>
+      <p class="who"><PlayerAvatar avatar={starter?.avatar ?? 0} url={starter?.avatarUrl} bouille={starter?.bouille} size={32} expr="happy" /> {t('games.chainOf', { name: starter?.nickname ?? '?' })} · {s.pos.chain + 1} / {n}</p>
     {/if}
   </header>
 
@@ -125,7 +125,7 @@
       {#each shown as e, r (r)}
         {@const a = author(s.pos.chain, r)}
         <li>
-          <span class="by"><Avatar id={a?.avatar ?? 0} url={a?.avatarUrl} size={28} /> {a?.nickname}</span>
+          <span class="by"><PlayerAvatar avatar={a?.avatar ?? 0} url={a?.avatarUrl} bouille={a?.bouille} size={28} expr={r % 3 === 1 ? 'surprised' : 'happy'} /> {a?.nickname}</span>
           <EntryView entry={e} />
         </li>
       {/each}

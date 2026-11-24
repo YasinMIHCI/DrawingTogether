@@ -2,7 +2,7 @@
   import { onMount, type Snippet } from 'svelte';
   import { MAX_PLAYERS, type Room } from '../../net/room';
   import { t } from '../../lib/i18n/t.svelte';
-  import Avatar from '../../components/Avatar.svelte';
+  import PlayerAvatar from '../../components/PlayerAvatar.svelte';
   import QrCode from './QrCode.svelte';
   import { play } from '../../lib/sound';
   import type { SharedSession } from '../../net/sharedSession';
@@ -87,7 +87,7 @@
         <li class:empty={!p}>
           {#if p}
             <div class="av">
-              <Avatar id={p.avatar} url={p.avatarUrl} size={56} />
+              <PlayerAvatar avatar={p.avatar} url={p.avatarUrl} bouille={p.bouille} size={56} expr={p.id === s.state.hostId ? 'happy' : 'neutral'} />
               {#if p.id === s.state.hostId}<span class="crown" title={t('shared.host')} aria-label={t('shared.host')}>👑</span>{/if}
             </div>
             <span class="name">{p.nickname}{#if p.id === room.me.id} <em>({t('shared.you')})</em>{/if}</span>

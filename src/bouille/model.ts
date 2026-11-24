@@ -23,6 +23,18 @@ export interface BouilleData {
   glasses: Part;
   mark: Part; // grain de beauté, taches de rousseur, joues…
   body: { h: number; w: number; c: number; p: number }; // taille, carrure, haut, bas
+  /** Peinture sur le visage : image PNG (data URL en local, ou adresse publique une fois envoyée) */
+  paint?: string;
+}
+
+/** Zone (repère de la Bouille) couverte par la peinture, et taille de l'image en pixels. */
+export const PAINT_BOX = { x: 18, y: 22, s: 164 } as const;
+export const PAINT_SIZE = 128;
+
+/** N'accepte que des images PNG en data URL ou hébergées dans le stockage public des avatars (pas de guillemets possibles). */
+export function isSafePaint(v: unknown): v is string {
+  return typeof v === 'string' && v.length < 400_000 &&
+    (/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(v) || /^https:\/\/[a-z0-9.-]+\/storage\/v1\/object\/public\/avatars\/[\w\-/.]+(\?v=\d+)?$/.test(v));
 }
 
 export type Category = 'face' | 'hair' | 'brows' | 'eyes' | 'nose' | 'mouth' | 'beard' | 'must' | 'glasses' | 'mark' | 'body';
@@ -130,7 +142,23 @@ export function parseBouille(raw: unknown): BouilleData | null {
     h: clamp(o.body?.h, -4, 4), w: clamp(o.body?.w, -4, 4),
     c: clamp(o.body?.c, 0, CLOTH.length - 1, d.body.c), p: clamp(o.body?.p, 0, PANTS.length - 1),
   };
+  if (isSafePaint(o.paint)) out.paint = o.paint;
   return out;
 }
 
 export const stringifyBouille = (b: BouilleData) => JSON.stringify(b);
+
+/** Bouille à partager dans une salle : sans peinture intégrée (trop lourde), seulement une adresse en ligne. */
+export function presenceBouille(json: string | null | undefined = undefined): string | null {
+  const b = parseBouille(json === undefined ? loadLocal() : json);
+  if (!b) return null;
+  if (b.paint?.startsWith('data:')) delete b.paint;
+  return stringifyBouille(b);
+}
+function loadLocal(): string | null {
+  try {
+    return (JSON.parse(localStorage.getItem('dt.settings') ?? '{}') as { bouille?: string }).bouille ?? null;
+  } catch {
+    return null;
+  }
+}
