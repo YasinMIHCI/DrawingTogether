@@ -7,12 +7,12 @@
   import { social } from '../social/store.svelte';
   import Avatar from './Avatar.svelte';
   import { parseBouille } from '../bouille/model';
-  import { renderBouille } from '../bouille/render';
+  import BouilleImg from './BouilleImg.svelte';
 
   const meHref = $derived(auth.profile ? `#/u/${auth.profile.username}` : href('account'));
   const meOn = $derived(router.route === 'account' || router.route === 'bouille' || (router.route === 'u' && router.param === auth.profile?.username));
   const url = $derived(auth.profile?.avatar_url ?? settings.avatarUrl);
-  const mine = $derived(!url && settings.bouille ? parseBouille(settings.bouille) : null);
+  const mine = $derived(settings.bouille ? parseBouille(settings.bouille) : null);
 
   /** Barre de navigation à gauche (ordinateur, tablette et téléphone). */
   const items: { route: Route; label: Key; icon: string; badge?: () => number; also?: Route[] }[] = [
@@ -41,7 +41,7 @@
 
 <nav class="side" aria-label={t('nav.menu')}>
   <a class="item me" class:on={meOn} href={meHref} aria-current={meOn ? 'page' : undefined}>
-    <span class="avatar-frame">{#if mine}<span class="bq">{@html renderBouille(mine, { view: 'head' })}</span>{:else}<Avatar id={settings.avatar} {url} size={40} />{/if}</span>
+    <span class="avatar-frame">{#if mine}<span class="bq"><BouilleImg bouille={mine} view="head" w={40} h={40} /></span>{:else}<Avatar id={settings.avatar} {url} size={40} />{/if}</span>
     <span class="label">{auth.profile ? t('nav.profile') : t('nav.signin')}</span>
   </a>
   <div class="list">

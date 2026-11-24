@@ -6,6 +6,7 @@
   import { t } from '../../lib/i18n/t.svelte';
   import Avatar from '../../components/Avatar.svelte';
   import PostImage from './PostImage.svelte';
+  import BouilleImg from '../../components/BouilleImg.svelte';
   import { parseBouille } from '../../bouille/model';
   import { renderBouille } from '../../bouille/render';
 
@@ -81,7 +82,7 @@
 <article class="post" class:compact>
   {#if !compact}
     <a class="who avatar-frame" href="#/u/{post.owner?.username}" aria-label={name}>
-      {#if ownerB}<span class="ob">{@html renderBouille(ownerB, { view: 'head', expr: (post.mood ?? 'neutral') as Expression })}</span>
+      {#if ownerB}<span class="ob"><BouilleImg bouille={ownerB} view="head" expr={(post.mood ?? 'neutral') as Expression} w={56} h={56} /></span>
       {:else}<Avatar id={0} url={post.owner?.avatar_url ?? null} size={56} />{/if}
     </a>
   {/if}

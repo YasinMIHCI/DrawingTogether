@@ -194,7 +194,7 @@ Ordre : T9.1–T9.2 → T10.1–T10.3 → T10.5, T9.4, T9.6 → T10.4 → T9.3 �
 - ✅ **T12.1c** Peinture sur 4 zones (visage, arrière de la tête, corps devant, dos), au choix sur une feuille 2D ou directement sur le modèle 3D.
 - ✅ **T12.2** Les 24 coiffures en 3D (`src/bouille/hair3d.ts`) : surfaces sculptées (mèches en relief, franges et pointes découpées, raies), volumes (chignons, couettes, queue, pointes, crête, afro).
 - ✅ **T12.1d** Calques 2D façon « feuille » (devant / derrière la tête et le corps) : le dessin dépasse de la silhouette ; peinture 3D en plein écran sur téléphone.
-- **T12.3** Images de la Bouille 3D partout dans le site ; 3D animée sur la place de l'accueil (ordinateur).
+- ✅ **T12.3** Images 3D de la Bouille partout (place de l'accueil, fil, salles, jeux, barre de gauche, avatar du compte), rendues par un moteur 3D partagé et mises en cache ; dessin 2D en attendant ou sans 3D.
 
 ### Ordre conseillé
 `Phase 0 → Phase 1 (T1.1–T1.6) → Phase 3 (mobile) et Phase 2 (desktop) en parallèle → Phase 4 → Phase 5 → Phase 6 → reste de la Phase 1 → Phase 7`.

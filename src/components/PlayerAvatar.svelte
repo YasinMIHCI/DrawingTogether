@@ -1,6 +1,7 @@
 <script lang="ts">
   import { parseBouille } from '../bouille/model';
-  import { renderBouille, type Expression } from '../bouille/render';
+  import type { Expression } from '../bouille/render';
+  import BouilleImg from './BouilleImg.svelte';
   import Avatar from './Avatar.svelte';
 
   /** Avatar d'un joueur : sa Bouille (avec une expression) si elle est connue, sinon son image ou un avatar dessiné. */
@@ -11,7 +12,7 @@
 </script>
 
 {#if b}
-  <span class="bq" style:width="{size}px" style:height="{size}px">{@html renderBouille(b, { view: 'head', expr })}</span>
+  <span class="bq" style:width="{size}px" style:height="{size}px"><BouilleImg bouille={b} view="head" {expr} w={size} h={size} /></span>
 {:else}
   <Avatar id={avatar} {url} {size} />
 {/if}

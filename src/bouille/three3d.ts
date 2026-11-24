@@ -293,7 +293,7 @@ export class Bouille3D {
   private shownYaw = 0;
   private t0 = performance.now();
 
-  constructor(private canvas: HTMLCanvasElement) {
+  constructor(private canvas: HTMLCanvasElement, animate = true) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
     this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -346,6 +346,7 @@ export class Bouille3D {
       }
       this.flats[k] = { mesh, tex };
     }
+    if (!animate) return;
     const loop = () => {
       this.frame = requestAnimationFrame(loop);
       this.tick();
@@ -361,15 +362,16 @@ export class Bouille3D {
 
   private frameCamera() {
     const full = this.view === 'full';
-    const top = this.topY;
-    const bottom = full ? this.bottom - 0.05 : -2.1;
+    const headOnly = this.view === 'head';
+    const top = headOnly ? Math.min(this.topY, 1.6) : this.topY;
+    const bottom = full ? this.bottom - 0.05 : headOnly ? -1.45 : -2.1;
     const h = top - bottom;
     const mid = (top + bottom) / 2;
     const fov = (this.camera.fov * Math.PI) / 180;
     const fitH = h / 2 / Math.tan(fov / 2);
-    const fitW = (full ? 3.2 : 3.6) / 2 / Math.tan(fov / 2) / this.camera.aspect;
+    const fitW = (full ? 3.2 : headOnly ? 2.9 : 3.6) / 2 / Math.tan(fov / 2) / this.camera.aspect;
     const d = Math.max(fitH, fitW) * 1.06 + 1;
-    this.camera.position.set(0, mid + 0.35, d);
+    this.camera.position.set(0, mid + (headOnly ? 0.1 : 0.35), d);
     this.camera.lookAt(0, mid, 0);
     this.camera.updateProjectionMatrix();
   }
@@ -596,6 +598,20 @@ export class Bouille3D {
     this.char.rotation.y = this.shownYaw + Math.sin(t * 0.8) * 0.04 * sway;
     this.char.position.y = Math.sin(t * 1.6) * 0.015 * sway;
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /** Image fixe (PNG en data URL) de la Bouille : vue, expression, rotation, taille en pixels. */
+  async still(b: BouilleData, opt: Options3D & { yaw?: number; w: number; h: number; background?: string | null }): Promise<string> {
+    await this.set(b, { view: opt.view, expr: opt.expr });
+    this.renderer.setPixelRatio(1);
+    this.renderer.setSize(opt.w, opt.h, false);
+    this.camera.aspect = opt.w / opt.h;
+    this.frameCamera();
+    this.char.rotation.y = opt.yaw ?? 0;
+    this.char.position.y = 0;
+    this.renderer.setClearColor(opt.background ?? 0x000000, opt.background ? 1 : 0);
+    this.renderer.render(this.scene, this.camera);
+    return this.canvas.toDataURL('image/png');
   }
 
   dispose() {

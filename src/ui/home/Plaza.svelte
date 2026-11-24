@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { parseBouille, randomBouille, seeded, type BouilleData } from '../../bouille/model';
-  import { renderBouille, type Expression } from '../../bouille/render';
+  import type { Expression } from '../../bouille/render';
+  import BouilleImg from '../../components/BouilleImg.svelte';
   import { feed, friendState, postImage, profilesWithBouille, type Post } from '../../social/api';
   import { auth } from '../../social/auth.svelte';
   import { settings } from '../../lib/settings.svelte';
@@ -78,7 +79,6 @@
     // Passants (toujours les mêmes)
     const total = narrow ? 9 : 15;
     for (let i = 0; list.length < total; i++) list.push(walker(`v${i}`, randomBouille(seeded(1000 + i)), ''));
-    art.clear();
     walkers = list;
     posts = friendPosts;
   }
@@ -86,14 +86,6 @@
   let posts: Post[] = [];
   let bubbleIndex = 0;
 
-  // Dessins mis en cache : (Bouille, sens, expression)
-  const art = new Map<string, string>();
-  function svgOf(w: Walker): string {
-    const k = `${w.key}|${w.dir}|${w.emo}`;
-    let s = art.get(k);
-    if (!s) art.set(k, (s = renderBouille(w.b, { view: 'full', turn: w.dir * 0.7, expr: w.emo })));
-    return s;
-  }
   const EMOTES: Expression[] = ['happy', 'surprised', 'wink', 'happy'];
 
   function step() {
@@ -175,7 +167,7 @@
         </a>
       {/if}
       {#if w.me || w.username}<span class="name">{w.name}</span>{/if}
-      <div class="body">{@html svgOf(w)}</div>
+      <div class="body"><BouilleImg bouille={w.b} view="full" expr={w.emo} yaw={w.dir * 0.6} w={96} h={126} /></div>
     </div>
   {/each}
 </section>
@@ -213,7 +205,7 @@
   @keyframes float { 50% { margin-top: -6px; } }
 
   .walker {
-    position: absolute; width: 72px; height: 94px; transform: translate(-50%, -100%) scale(var(--k));
+    position: absolute; width: 96px; height: 126px; transform: translate(-50%, -100%) scale(var(--k));
     transform-origin: 50% 100%; transition-property: left, top; transition-timing-function: linear; pointer-events: none;
   }
   .walker::before { content: ''; position: absolute; left: 14%; right: 14%; bottom: -3px; height: 8px; border-radius: 50%; background: rgba(0, 0, 0, 0.12); }
@@ -243,6 +235,6 @@
   :global(:root[data-theme='dark']) .floor { filter: invert(1); }
   @media (max-width: 600px) {
     .plaza { border-radius: 18px; }
-    .walker { width: 52px; height: 68px; }
+    .walker { width: 70px; height: 92px; }
   }
 </style>

@@ -14,6 +14,7 @@
   import { router } from '../lib/router.svelte';
   import FacePaint from '../ui/bouille/FacePaint.svelte';
   import Bouille3DView from '../ui/bouille/Bouille3DView.svelte';
+  import { bouilleStill } from '../bouille/stills';
   import { PAINT_SHEETS, type PaintSheet } from '../bouille/model';
   import type { Bouille3D, Brush } from '../bouille/three3d';
   import { EXPRESSIONS, type Expression } from '../bouille/render';
@@ -188,7 +189,10 @@
     settings.bouille = stringifyBouille(b);
     if (auth.userId) {
       try {
-        settings.bouille = await saveBouille(settings.bouille, await bouillePng(b, 256, '#f4efe2'));
+        // Image de l'avatar : rendu 3D si la 3D est utilisée, sinon le dessin 2D
+        const still = mode3d ? await bouilleStill($state.snapshot(b) as BouilleData, { view: 'head', w: 256, h: 256, background: '#f4efe2' }) : null;
+        const png = still ? await (await fetch(still)).blob() : await bouillePng(b, 256, '#f4efe2');
+        settings.bouille = await saveBouille(settings.bouille, png);
       } catch {
         error = t('bou.saveError');
         busy = false;
