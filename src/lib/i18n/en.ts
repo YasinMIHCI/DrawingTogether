@@ -841,4 +841,5 @@ export const en: Dict = {
   'ch.all': "All posts",
   'ch.empty': "Nobody has taken up this challenge yet: your turn!",
   'ch.feedBanner': "Challenge of the week: {theme}",
+  'bou.cat.paint': "Face paint",
 };

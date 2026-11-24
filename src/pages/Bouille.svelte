@@ -156,6 +156,13 @@
           <span class="ti">{@html icon(c)}</span>
           <span>{t(`bou.cat.${c}` as Key)}</span>
         </button>
+        {#if c === 'face'}
+          <!-- Peinture du visage : onglet à part pour qu'on la trouve -->
+          <button class="paint-tab" onclick={() => (painting = true)} title={t('paint.title')}>
+            <span class="ti">🖌</span>
+            <span>{t('bou.cat.paint')}</span>
+          </button>
+        {/if}
       {/each}
     </div>
 
@@ -287,6 +294,7 @@
     background: #fff; color: var(--ink-b); font: inherit; font-size: 0.72rem; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 rgba(0, 0, 0, 0.1);
   }
   .tabs [aria-selected='true'] { background: var(--orange); color: #2c2a33; }
+  .paint-tab .ti { font-size: 1.6rem; background: linear-gradient(#fff, #fde7c4); }
   .ti { width: 46px; height: 40px; display: grid; place-items: center; background: #fff; border-radius: 10px; }
   .ti :global(svg) { width: 100%; height: 100%; }
   .options { overflow-y: auto; padding: 4px 4px 24px; display: grid; gap: 10px; align-content: start; }

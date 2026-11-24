@@ -839,4 +839,5 @@ export const fr = {
   'ch.all': "Toutes les publications",
   'ch.empty': "Personne n'a encore relevé ce défi : à toi de jouer !",
   'ch.feedBanner': "Défi de la semaine : {theme}",
+  'bou.cat.paint': "Peinture",
 } as const;
