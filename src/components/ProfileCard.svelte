@@ -15,6 +15,7 @@
       bind:value={settings.nickname}
     />
   </label>
+  <a class="bouille-link" href="#/bouille">{settings.bouille ? t('bou.edit') : t('bou.create')}</a>
   <fieldset>
     <legend>{t('profile.avatar')}</legend>
     <div class="avatars">
@@ -34,6 +35,7 @@
 </section>
 
 <style>
+  .bouille-link { display: block; text-align: center; margin-bottom: 14px; padding: 10px; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-weight: 800; text-decoration: none; }
   .card { background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
   h2 { margin: 0 0 12px; font-size: 1.1rem; }
   .nick { display: grid; gap: 6px; margin-bottom: 16px; }

@@ -6,6 +6,11 @@
   import { auth } from '../social/auth.svelte';
   import { social } from '../social/store.svelte';
   import Avatar from './Avatar.svelte';
+  import { parseBouille } from '../bouille/model';
+  import { renderBouille } from '../bouille/render';
+
+  const url = $derived(auth.profile?.avatar_url ?? settings.avatarUrl);
+  const mine = $derived(!url && settings.bouille ? parseBouille(settings.bouille) : null);
 
   /** Barre de navigation à gauche (ordinateur, tablette et téléphone). */
   const items: { route: Route; label: Key; icon: string; badge?: () => number; also?: Route[] }[] = [
@@ -26,7 +31,7 @@
 
 <nav class="side" aria-label={t('nav.menu')}>
   <a class="item me" class:on={router.route === 'account'} href={href('account')} aria-current={router.route === 'account' ? 'page' : undefined}>
-    <span class="avatar-frame"><Avatar id={settings.avatar} url={auth.profile?.avatar_url ?? settings.avatarUrl} size={40} /></span>
+    <span class="avatar-frame">{#if mine}<span class="bq">{@html renderBouille(mine, { view: 'head' })}</span>{:else}<Avatar id={settings.avatar} {url} size={40} />{/if}</span>
     <span class="label">{auth.profile ? t('nav.profile') : t('nav.signin')}</span>
   </a>
   <div class="list">
@@ -65,6 +70,8 @@
   .item:hover { background: var(--surface-2); }
   .item.on { color: var(--accent); background: var(--green-soft); }
   .item.on::before { content: ''; position: absolute; left: 0; top: 14px; bottom: 14px; width: 4px; border-radius: 0 4px 4px 0; background: var(--green-bright); }
+  .bq { display: block; width: 40px; height: 40px; background: #f4efe2; border-radius: 11px; }
+  .bq :global(svg) { width: 100%; height: 100%; }
   .ico { position: relative; display: grid; place-items: center; }
   .label { font-size: 0.74rem; font-weight: 700; line-height: 1.15; }
   .me { min-height: 96px; }

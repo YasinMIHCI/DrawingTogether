@@ -18,6 +18,8 @@ export interface Settings {
   avatar: number;
   /** Avatar importé (photo ou dessin) du compte connecté, sinon null */
   avatarUrl: string | null;
+  /** Personnage créé dans le créateur de Bouille (JSON), sinon null */
+  bouille?: string | null;
 }
 
 const KEY = 'dt.settings';

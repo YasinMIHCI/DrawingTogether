@@ -138,6 +138,7 @@
       <div class="avatar-row">
         <Avatar id={settings.avatar} url={auth.profile.avatar_url} size={96} />
         <div class="col">
+          <a class="btn primary" href="#/bouille">{settings.bouille ? t('bou.edit') : t('bou.create')}</a>
           <button class="btn" onclick={importPhoto}>{t('acc.importPhoto')}</button>
           <button class="btn" onclick={() => (avatarMode = 'draw')}>{t('acc.drawAvatar')}</button>
           {#if auth.profile.avatar_url}<button class="btn ghost" onclick={() => run(removeAvatar)}>{t('acc.removeAvatar')}</button>{/if}
@@ -188,6 +189,7 @@
   fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
   .q { margin: 0; }
   .btn { font: inherit; min-height: 44px; padding: 0 16px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+  a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
   .btn.ghost { background: none; }
   .btn.danger { color: #c0392b; justify-self: start; }

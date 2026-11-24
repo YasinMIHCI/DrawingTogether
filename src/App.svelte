@@ -31,6 +31,7 @@
     messages: () => import('./pages/Messages.svelte'),
     feed: () => import('./pages/Feed.svelte'),
     u: () => import('./pages/Profile.svelte'),
+    bouille: () => import('./pages/Bouille.svelte'),
   } as const;
   const chrome = $derived(router.route !== 'draw' && !appChrome.fullscreen);
   const loader = $derived(router.route === 'home' ? null : pages[router.route]());
