@@ -58,3 +58,30 @@ export function bouilleStill(b: BouilleData, opt: StillOptions): Promise<string 
   }
   return p;
 }
+
+/** Images par pas dans les planches de marche. */
+export const WALK_FRAMES = 8;
+/** Rotations des planches de marche : ligne 0 vers la droite, ligne 1 vers la gauche. */
+export const WALK_YAWS = [0.6, -0.6];
+const walkCache = new Map<string, Promise<string | null>>();
+
+/** Planche de marche 3D (voir Bouille3D.walkSheet), mise en file et en cache comme les images fixes. */
+export function bouilleWalk(b: BouilleData, opt: { expr?: Expression; w: number; h: number }): Promise<string | null> {
+  const key = `${stringifyBouille(b)}|${opt.expr ?? 'neutral'}|${opt.w}x${opt.h}`;
+  let p = walkCache.get(key);
+  if (!p) {
+    p = chain.then(async () => {
+      const e = await getEngine();
+      if (!e) return null;
+      try {
+        return await e.walkSheet(b, { expr: opt.expr ?? 'neutral', yaws: WALK_YAWS, frames: WALK_FRAMES, w: opt.w, h: opt.h });
+      } catch {
+        return null;
+      }
+    });
+    chain = p;
+    walkCache.set(key, p);
+    if (walkCache.size > 60) walkCache.delete(walkCache.keys().next().value!);
+  }
+  return p;
+}

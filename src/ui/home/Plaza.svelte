@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { parseBouille, randomBouille, seeded, type BouilleData } from '../../bouille/model';
   import type { Expression } from '../../bouille/render';
-  import BouilleImg from '../../components/BouilleImg.svelte';
+  import BouilleWalk from '../../components/BouilleWalk.svelte';
   import { feed, friendState, postImage, profilesWithBouille, type Post } from '../../social/api';
   import { auth } from '../../social/auth.svelte';
   import { settings } from '../../lib/settings.svelte';
@@ -167,7 +167,7 @@
         </a>
       {/if}
       {#if w.me || w.username}<span class="name">{w.name}</span>{/if}
-      <div class="body"><BouilleImg bouille={w.b} view="full" expr={w.emo} yaw={w.dir * 0.6} w={96} h={126} /></div>
+      <div class="body"><BouilleWalk bouille={w.b} expr={w.emo} dir={w.dir} moving={w.moving} w={96} h={126} /></div>
     </div>
   {/each}
 </section>
@@ -210,9 +210,6 @@
   }
   .walker::before { content: ''; position: absolute; left: 14%; right: 14%; bottom: -3px; height: 8px; border-radius: 50%; background: rgba(0, 0, 0, 0.12); }
   .body { width: 100%; height: 100%; }
-  .body :global(svg) { width: 100%; height: 100%; }
-  .moving .body { animation: walk 0.42s ease-in-out infinite; }
-  @keyframes walk { 50% { transform: translateY(-4px) rotate(2deg); } }
   .name { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 2px; font-size: 0.7rem; font-weight: 800; background: #5d6268; color: #fff; padding: 0 6px; border-radius: 6px; white-space: nowrap; }
   .me .name { background: var(--accent); }
   .bubble {

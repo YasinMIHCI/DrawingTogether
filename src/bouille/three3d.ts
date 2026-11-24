@@ -178,7 +178,42 @@ function loadBody(): Promise<THREE.Mesh> {
 }
 
 /** Matière du corps : la couleur dépend de la zone (cou, mains, haut, bas, chaussures) d'après la pose de base ; peinture par-dessus. */
-function bodyMaterial(skin: string, shirt: string, pants: string, paint: THREE.Texture): THREE.MeshStandardMaterial {
+/** Pose de marche : uniformes partagés avec le shader du corps (pivots dans le repère déformé par Grandeur / Carrure). */
+interface WalkUniforms {
+  uWalk: { value: number };
+  uPhase: { value: number };
+  uHip: { value: number };
+  uKnee: { value: number };
+  uSh: { value: THREE.Vector2 };
+}
+
+/**
+ * Marche sans squelette : jambes et bras pivotent (hanches, genoux, épaules) dans le shader.
+ * Les poids viennent de la pose de base (squelette de tools/blender/build_body.py : hanches y = -1.28,
+ * genoux y = -1.82, épaules y = -0.36, mains au-delà de |x| = 0.62).
+ */
+const WALK_GLSL = `
+uniform float uWalk; uniform float uPhase; uniform float uHip; uniform float uKnee; uniform vec2 uSh;
+vec3 walkRot(vec3 v, float py, float a, float n) {
+  vec2 q = v.yz - vec2(py * n, 0.0);
+  float c = cos(a), s = sin(a);
+  q = vec2(q.x * c - q.y * s, q.x * s + q.y * c);
+  return vec3(v.x, q + vec2(py * n, 0.0));
+}
+vec3 walkPose(vec3 v, vec3 b, float n) {
+  if (uWalk == 0.0) return v;
+  float ax = abs(b.x);
+  float sw = sin(uPhase * 6.2832) * (b.x < 0.0 ? -1.0 : 1.0);
+  float leg = smoothstep(-1.26, -1.5, b.y) * smoothstep(0.02, 0.16, ax) * (1.0 - smoothstep(0.52, 0.6, ax));
+  float shin = smoothstep(-1.72, -1.9, b.y) * leg;
+  v = walkRot(v, uKnee, 0.75 * max(0.0, -sw) * shin * uWalk, n);
+  v = walkRot(v, uHip, -0.42 * sw * leg * uWalk, n);
+  float arm = smoothstep(0.5, 0.64, ax) * smoothstep(-0.3, -0.6, b.y);
+  v = walkRot(v, uSh.y, 0.5 * sw * arm * uWalk, n);
+  return v;
+}`;
+
+function bodyMaterial(skin: string, shirt: string, pants: string, paint: THREE.Texture, walk: WalkUniforms): THREE.MeshStandardMaterial {
   const m = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0 });
   const z = META.zones;
   const col = (c: string) => new THREE.Color(c);
@@ -186,11 +221,13 @@ function bodyMaterial(skin: string, shirt: string, pants: string, paint: THREE.T
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, {
       uSkin: { value: col(skin) }, uNeck: { value: col(shade(skin, -0.06)) }, uShirt: { value: col(shirt) },
-      uPants: { value: col(pants) }, uShoes: { value: col('#4a3b33') }, uPaint: { value: paint },
+      uPants: { value: col(pants) }, uShoes: { value: col('#4a3b33') }, uPaint: { value: paint }, ...walk,
     });
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vBase;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBase = position;');
+      .replace('#include <common>', `#include <common>\nvarying vec3 vBase;\n${WALK_GLSL}`)
+      .replace('#include <morphnormal_vertex>', '#include <morphnormal_vertex>\nobjectNormal = walkPose(objectNormal, position, 0.0);')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBase = position;')
+      .replace('#include <project_vertex>', 'transformed = walkPose(transformed, position, 1.0);\n#include <project_vertex>');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
 varying vec3 vBase;
@@ -291,6 +328,7 @@ export class Bouille3D {
   /** Balancement automatique (désactivé pendant la peinture). */
   idle = true;
   private shownYaw = 0;
+  private walk: WalkUniforms = { uWalk: { value: 0 }, uPhase: { value: 0 }, uHip: { value: -1.28 }, uKnee: { value: -1.82 }, uSh: { value: new THREE.Vector2(0.56, -0.36) } };
   private t0 = performance.now();
 
   constructor(private canvas: HTMLCanvasElement, animate = true) {
@@ -455,7 +493,7 @@ export class Bouille3D {
       this.char.add(this.body);
     }
     (this.body.material as THREE.Material).dispose();
-    this.body.material = bodyMaterial(skin, CLOTH[b.body.c] ?? CLOTH[0], PANTS[b.body.p] ?? PANTS[0], this.bodyTex);
+    this.body.material = bodyMaterial(skin, CLOTH[b.body.c] ?? CLOTH[0], PANTS[b.body.p] ?? PANTS[0], this.bodyTex, this.walk);
     const dict = this.body.morphTargetDictionary ?? {};
     const inf = this.body.morphTargetInfluences ?? [];
     const hk = b.body.h / 4;
@@ -464,6 +502,12 @@ export class Bouille3D {
     inf[dict.short] = Math.max(0, -hk);
     inf[dict.wide] = Math.max(0, wk);
     inf[dict.thin] = Math.max(0, -wk);
+    // Pivots de la marche, déplacés comme le corps par Grandeur / Carrure
+    const kh = 1 + 0.48 * hk;
+    const stretch = (y: number) => -META.neck + (y + META.neck) * kh;
+    this.walk.uHip.value = stretch(-1.28);
+    this.walk.uKnee.value = stretch(-1.82);
+    this.walk.uSh.value.set(0.56 * (1 + 0.4 * wk), stretch(-0.36));
     const chinY = toY(FACE_SHAPES[b.face.s]?.[2] ?? 174);
     this.body.position.y = chinY + 0.28;
     const bottomAt = (v: number, plus: number, minus: number) => (v >= 0 ? META.bottom + (plus - META.bottom) * v : META.bottom + (minus - META.bottom) * -v);
@@ -612,6 +656,43 @@ export class Bouille3D {
     this.renderer.setClearColor(opt.background ?? 0x000000, opt.background ? 1 : 0);
     this.renderer.render(this.scene, this.camera);
     return this.canvas.toDataURL('image/png');
+  }
+
+  /**
+   * Planche de marche (data URL) : une ligne par rotation, `frames` images par ligne, un cycle complet de pas.
+   * Rendue une seule fois puis jouée en CSS : rien à calculer pendant que les Bouilles se baladent.
+   */
+  async walkSheet(b: BouilleData, opt: { expr: Expression; yaws: number[]; frames: number; w: number; h: number }): Promise<string> {
+    await this.set(b, { view: 'full', expr: opt.expr });
+    const { w, h, frames, yaws } = opt;
+    this.renderer.setPixelRatio(1);
+    this.renderer.setSize(w, h, false);
+    this.camera.aspect = w / h;
+    this.frameCamera();
+    this.renderer.setClearColor(0x000000, 0);
+    const out = document.createElement('canvas');
+    out.width = w * frames;
+    out.height = h * yaws.length;
+    const ctx = out.getContext('2d')!;
+    this.walk.uWalk.value = 1;
+    try {
+      yaws.forEach((yaw, row) => {
+        for (let f = 0; f < frames; f++) {
+          const a = (f / frames) * Math.PI * 2;
+          this.walk.uPhase.value = f / frames;
+          this.char.rotation.y = yaw;
+          this.char.position.y = 0.05 * Math.abs(Math.cos(a));
+          this.headGroup.rotation.z = 0.035 * Math.sin(a);
+          this.renderer.render(this.scene, this.camera);
+          ctx.drawImage(this.canvas, f * w, row * h, w, h);
+        }
+      });
+    } finally {
+      this.walk.uWalk.value = 0;
+      this.char.position.y = 0;
+      this.headGroup.rotation.z = 0;
+    }
+    return out.toDataURL('image/webp');
   }
 
   dispose() {
