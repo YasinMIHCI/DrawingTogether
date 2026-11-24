@@ -197,7 +197,7 @@ export class Editor {
   }
 
   private emitStroke(p: InputPoint | null): void {
-    const b = this.activeBrush;
+    const b = this.gestureTool === 'eraser' ? this.eraser : this.gestureTool === 'brush' ? this.brush : null;
     if (b) for (const fn of this.strokeListeners) fn(p, b);
   }
 
@@ -428,14 +428,19 @@ export class Editor {
     return notice ? null : layer;
   }
 
+  /** Outil du geste en cours : celui choisi, ou la gomme si le bouton du stylet est enfoncé. */
+  private gestureTool: ToolId = 'brush';
+
   private pointerDown(screen: InputPoint, pointerType: string): boolean {
     const p = this.toDocPoint(screen);
-    switch (this.tool) {
+    const tool: ToolId = screen.erase ? 'eraser' : this.tool;
+    this.gestureTool = tool;
+    switch (tool) {
       case 'brush':
       case 'eraser': {
         const layer = this.editableLayer();
         if (!layer) return false;
-        this.stroke.begin(layer, this.activeBrush!, this.color, p, pointerType !== 'pen', this.selection.canvas);
+        this.stroke.begin(layer, tool === 'eraser' ? this.eraser : this.brush, this.color, p, pointerType !== 'pen', this.selection.canvas);
         this.emitStroke(p);
         this.requestRender();
         return true;
@@ -498,7 +503,7 @@ export class Editor {
 
   private pointerMove(points: InputPoint[]): void {
     const last = points[points.length - 1];
-    switch (this.tool) {
+    switch (this.gestureTool) {
       case 'brush':
       case 'eraser':
         {
@@ -542,7 +547,7 @@ export class Editor {
   }
 
   private pointerUp(): void {
-    switch (this.tool) {
+    switch (this.gestureTool) {
       case 'brush':
       case 'eraser': {
         const cmd = this.stroke.end();

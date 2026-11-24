@@ -37,6 +37,14 @@ const LONG_PRESS_MOVE = 8;
 const TAP_MS = 350;
 const TAP_MOVE = 12;
 
+/**
+ * Bouton du stylet : le bouton latéral (S Pen, etc.) arrive comme un « clic droit »
+ * (button 2 / buttons & 2), le bout gomme comme button 5 / buttons & 32.
+ */
+export function isPenEraser(e: Pick<PointerEvent, 'pointerType' | 'button' | 'buttons'>): boolean {
+  return e.pointerType === 'pen' && (e.button === 2 || e.button === 5 || (e.buttons & (2 | 32)) !== 0);
+}
+
 function pressureOf(e: PointerEvent): number {
   if (e.pointerType === 'pen') return e.pressure;
   if (e.pointerType === 'touch') return e.pressure > 0 && e.pressure < 1 ? e.pressure : 1;
@@ -89,7 +97,11 @@ export function attachInput(el: HTMLElement, h: InputHandlers): () => void {
     rect = el.getBoundingClientRect();
     const p = local(e);
     pointers.set(e.pointerId, { p, type: e.pointerType });
-    el.setPointerCapture?.(e.pointerId);
+    try {
+      el.setPointerCapture?.(e.pointerId);
+    } catch {
+      /* pointeur déjà relâché : sans importance */
+    }
     e.preventDefault();
 
     if (e.pointerType === 'touch') {
@@ -123,7 +135,8 @@ export function attachInput(el: HTMLElement, h: InputHandlers): () => void {
       updateCursor();
       return;
     }
-    if (e.button !== 0) return;
+    const penEraser = isPenEraser(e);
+    if (e.button !== 0 && !penEraser) return;
     // Alt + clic : pipette temporaire
     if (e.altKey && e.pointerType !== 'touch' && h.canPick()) {
       mode = 'pick';
@@ -131,7 +144,7 @@ export function attachInput(el: HTMLElement, h: InputHandlers): () => void {
       h.pick(p);
       return;
     }
-    if (h.strokeStart({ ...p, pressure: pressureOf(e), shift: e.shiftKey, alt: e.altKey }, e.pointerType)) {
+    if (h.strokeStart({ ...p, pressure: pressureOf(e), shift: e.shiftKey, alt: e.altKey, erase: penEraser }, e.pointerType)) {
       mode = 'stroke';
       strokeId = e.pointerId;
       strokeType = e.pointerType;

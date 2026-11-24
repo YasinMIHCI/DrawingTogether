@@ -9,6 +9,8 @@ export interface InputPoint {
   shift?: boolean;
   /** Touche Alt enfoncée (retrait de la sélection). */
   alt?: boolean;
+  /** Bouton du stylet (bouton latéral / gomme) enfoncé : gomme temporaire. */
+  erase?: boolean;
 }
 
 /** Un tampon à poser : centre, diamètre, densité, direction du trait, distance depuis le début. */
