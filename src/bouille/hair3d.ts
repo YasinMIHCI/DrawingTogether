@@ -371,15 +371,17 @@ export function buildHairGeometries(cap: Cap, back: Back, shape: number): THREE.
   switch (back) {
     case 'bun':
     case 'buns': {
-      const spots: [number, number][] = back === 'bun' ? [[180 * D, 22]] : [[-118 * D, 32], [118 * D, 32]];
+      // Chignons posés contre le crâne (à moitié enfoncés), avec un petit bourrelet à la base
+      const spots: [number, number][] = back === 'bun' ? [[180 * D, 24]] : [[-62 * D, 30], [62 * D, 30]];
       for (const [th, y] of spots) {
-        const p = sc.point(th, y, 0.2);
-        const r = back === 'bun' ? 0.36 : 0.3;
-        out.push(sphereAt(p, r, 0.92));
-        const tor = new THREE.TorusGeometry(r * 0.78, r * 0.3, 14, 40);
+        const r = back === 'bun' ? 0.34 : 0.27;
+        const base = sc.point(th, y, 0.08);
         const nrm = sc.normal(th, y);
+        const c = base.clone().addScaledVector(nrm, r * 0.5);
+        out.push(sphereAt(c, r, 1));
+        const tor = new THREE.TorusGeometry(r * 0.82, r * 0.17, 12, 36);
         tor.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), nrm));
-        tor.translate(p.x - nrm.x * 0.12, p.y - nrm.y * 0.12, p.z - nrm.z * 0.12);
+        tor.translate(base.x + nrm.x * r * 0.12, base.y + nrm.y * r * 0.12, base.z + nrm.z * r * 0.12);
         out.push(tor);
       }
       break;

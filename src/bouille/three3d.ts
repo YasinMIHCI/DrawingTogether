@@ -337,10 +337,11 @@ export class Bouille3D {
       const back = k === 'flatHead' || k === 'flatBack';
       if (back) mesh.rotation.y = Math.PI;
       if (head) {
-        mesh.position.set(0, headCenterY, back ? -1.08 : 1.02);
+        // Au ras du visage / de la nuque (comme une feuille posée dessus)
+        mesh.position.set(0, headCenterY, back ? -1.02 : 0.84);
         this.headGroup.add(mesh);
       } else {
-        mesh.position.set(0, 0, back ? -0.5 : 0.5);
+        mesh.position.set(0, 0, back ? -0.36 : 0.36);
         this.char.add(mesh);
       }
       this.flats[k] = { mesh, tex };
