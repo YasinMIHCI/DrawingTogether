@@ -194,7 +194,7 @@
   @media (max-width: 480px) { .grow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .row { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
   .save { margin: 0; font-weight: 600; color: var(--teal); }
-  .save.bad { color: #c0392b; }
+  .save.bad { color: var(--danger); }
   .top0 { margin-top: 4px; }
   .small-btn { margin-top: 10px; }
 </style>

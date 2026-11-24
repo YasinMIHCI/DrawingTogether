@@ -10,6 +10,10 @@
   --accent-ink: #ffffff;
   --green-bright: #5cc43a;
   --green-soft: #e6f6dc;
+  /* Textes colorés lisibles (contraste ≥ 4,5:1) */
+  --accent-text: #236b17;
+  --blue-text: #145f8f;
+  --danger: #b42f22;
   --blue: #1f8fcf;
   --blue-deep: #156fa6;
   --teal: #2bb3a3;
@@ -33,6 +37,9 @@
     --accent-ink: #10240a;
     --green-bright: #4aa52c;
     --green-soft: #22351c;
+    --accent-text: #8be067;
+    --blue-text: #8fcff5;
+    --danger: #ff8f80;
     --blue: #2a8cc4;
     --blue-deep: #1d6c9b;
     --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 6px 18px rgba(0, 0, 0, 0.3);
@@ -51,6 +58,9 @@
     --accent-ink: #10240a;
     --green-bright: #4aa52c;
     --green-soft: #22351c;
+    --accent-text: #8be067;
+    --blue-text: #8fcff5;
+    --danger: #ff8f80;
     --blue: #2a8cc4;
     --blue-deep: #1d6c9b;
     --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 6px 18px rgba(0, 0, 0, 0.3);
@@ -88,7 +98,8 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 /* Pages du réseau social (amis, messages, fil, profil) */
-.soc { max-width: 760px; margin: 0 auto; padding: 8px 16px 40px; display: grid; gap: 14px; align-content: start; }
+.soc { max-width: 760px; margin: 0 auto; padding: 8px 16px 40px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; }
+.soc > * { min-width: 0; }
 .soc h1, .soc h2, .soc h3 { margin: 0; }
 .soc h2 { font-size: 1.05rem; }
 .soc .muted { margin: 0; color: var(--ink-soft); }
@@ -97,7 +108,7 @@ button, input, select { font: inherit; color: inherit; }
 .soc .btn { font: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; cursor: pointer; }
 .soc .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
 .soc .btn.small { min-height: 32px; padding: 0 10px; font-size: 0.85rem; }
-.soc .btn.danger { color: #c0392b; }
+.soc .btn.danger { color: var(--danger); }
 .soc .btn:disabled { opacity: 0.5; cursor: default; }
 .soc .people { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .soc .person { display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: 12px; }
@@ -113,7 +124,7 @@ button, input, select { font: inherit; color: inherit; }
 .tiled-bg { background: var(--tile) 0 0 / 64px 64px, var(--bg); }
 /* Bandeau de titre : dégradé + damier discret */
 .band {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
   margin: 0 0 8px; padding: 10px 18px; min-height: 48px; border-radius: 14px;
   color: #fff; font-weight: 800; font-size: 1.2rem; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
   background:

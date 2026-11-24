@@ -81,7 +81,7 @@
   .note { margin: 0; font-size: 0.8rem; color: var(--ink-soft); }
   .fav { font: inherit; font-weight: 800; padding: 8px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer; }
   .fav.on { background: #fff4cc; color: #9a6a00; border-color: #f2c94c; }
-  .list { display: grid; gap: 18px; padding-bottom: 80px; }
+  .list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; padding-bottom: 80px; }
   .publish {
     position: fixed; right: 0; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 30;
     display: inline-flex; align-items: center; gap: 10px; font: inherit; font-weight: 800; font-size: 1.1rem;

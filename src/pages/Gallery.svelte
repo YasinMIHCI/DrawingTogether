@@ -114,5 +114,5 @@
   .row { display: flex; flex-wrap: wrap; gap: 4px; }
   .mini { font: inherit; font-size: 0.8rem; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); margin: 0; padding: 10px 16px; border-radius: 12px; background: var(--ink); color: var(--bg); }
-  .danger { color: #c0392b; }
+  .danger { color: var(--danger); }
 </style>

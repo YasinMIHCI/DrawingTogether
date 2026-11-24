@@ -84,7 +84,7 @@
     border: 0; border-bottom: 1px solid var(--line); background: none; font: inherit; cursor: pointer; text-align: center;
   }
   .item:hover { background: var(--surface-2); }
-  .item.on { color: var(--accent); background: var(--green-soft); }
+  .item.on { color: var(--accent-text); background: var(--green-soft); }
   .item.on::before { content: ''; position: absolute; left: 0; top: 14px; bottom: 14px; width: 4px; border-radius: 0 4px 4px 0; background: var(--green-bright); }
   .bq { display: block; width: 40px; height: 40px; background: #f4efe2; border-radius: 11px; }
   .bq :global(svg) { width: 100%; height: 100%; }

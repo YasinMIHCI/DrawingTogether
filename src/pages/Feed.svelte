@@ -59,7 +59,7 @@
 {#if sharing}<ShareDialog onclose={() => (sharing = false)} ondone={refresh} />{/if}
 
 <style>
-  .list { display: grid; gap: 18px; padding-bottom: 80px; }
+  .list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; padding-bottom: 80px; }
   .publish {
     position: fixed; right: 0; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 30;
     display: inline-flex; align-items: center; gap: 10px; font: inherit; font-weight: 800; font-size: 1.1rem;

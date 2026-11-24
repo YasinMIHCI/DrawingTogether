@@ -175,7 +175,7 @@
 {/if}
 
 <style>
-  main { max-width: 620px; margin: 0 auto; padding: 8px 16px 40px; display: grid; gap: 14px; }
+  main { max-width: 620px; margin: 0 auto; padding: 8px 16px 40px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
   h1, h2 { margin: 0; }
   h2 { font-size: 1.1rem; }
   .muted { margin: 0; color: var(--ink-soft); }
@@ -195,7 +195,7 @@
   a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
   .btn.ghost { background: none; }
-  .btn.danger { color: #c0392b; justify-self: start; }
+  .btn.danger { color: var(--danger); justify-self: start; }
   .btn:disabled { opacity: 0.5; }
   .avatar-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
   .col { display: grid; gap: 6px; }

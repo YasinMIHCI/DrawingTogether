@@ -113,5 +113,5 @@
   .tabs [aria-selected='true'] { background: linear-gradient(var(--green-bright), var(--accent)); color: #fff; }
   .n { min-width: 34px; padding: 1px 8px; border-radius: 8px; background: rgba(0, 0, 0, 0.18); color: #fff; font-size: 0.8rem; text-align: center; }
   .tabs [aria-selected='false'] .n { background: #8f959b; }
-  .list { display: grid; gap: 18px; }
+  .list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
 </style>

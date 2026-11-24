@@ -144,7 +144,7 @@
   .dialog { background: var(--bg); border-radius: 20px; padding: 14px; width: min(720px, 100%); max-height: 100%; overflow: auto; }
   .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .modes button { font: inherit; font-weight: 800; padding: 10px 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer; }
-  .modes [aria-selected='true'] { background: var(--green-soft); color: var(--accent); border-color: var(--green-bright); }
+  .modes [aria-selected='true'] { background: var(--green-soft); color: var(--accent-text); border-color: var(--green-bright); }
   .draw { height: min(56vh, 460px); }
   .pick { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
   .pick button { width: 100%; aspect-ratio: 4 / 3; border: 2px solid var(--line); border-radius: 10px; background: #fff; padding: 0; overflow: hidden; cursor: pointer; }

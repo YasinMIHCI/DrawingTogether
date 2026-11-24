@@ -252,7 +252,7 @@
   .tool.wide { padding: 0 16px; }
   .seg { display: inline-flex; background: rgba(255, 255, 255, 0.45); border-radius: 16px; padding: 4px; gap: 4px; }
   .seg button { border: 0; border-radius: 12px; padding: 10px 14px; font: inherit; font-weight: 800; background: none; color: var(--ink-b); cursor: pointer; }
-  .seg [aria-pressed='true'] { background: #fff; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12); color: var(--orange); }
+  .seg [aria-pressed='true'] { background: #fff; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12); color: #a14f00; }
   .grow { flex: 1; }
   .finish { display: grid; gap: 6px; }
   .pill { border: 0; border-radius: 14px; padding: 6px 22px; font: inherit; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 rgba(0, 0, 0, 0.12); min-width: 150px; }
@@ -286,7 +286,7 @@
     flex: none; width: 74px; display: grid; justify-items: center; gap: 2px; padding: 6px 4px; border: 0; border-radius: 16px;
     background: #fff; color: var(--ink-b); font: inherit; font-size: 0.72rem; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 rgba(0, 0, 0, 0.1);
   }
-  .tabs [aria-selected='true'] { background: var(--orange); color: #fff; }
+  .tabs [aria-selected='true'] { background: var(--orange); color: #2c2a33; }
   .ti { width: 46px; height: 40px; display: grid; place-items: center; background: #fff; border-radius: 10px; }
   .ti :global(svg) { width: 100%; height: 100%; }
   .options { overflow-y: auto; padding: 4px 4px 24px; display: grid; gap: 10px; align-content: start; }
