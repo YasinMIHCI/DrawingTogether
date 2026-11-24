@@ -159,6 +159,29 @@ L'utilisateur bascule entre « Style Krita » et « Style Paint » dans les rég
 - ✅ **T8.5** Fil de dessins : partager depuis la galerie (visible par les amis + discussions choisies), j'aime, commentaires, page profil `#/u/<pseudo>`.
 - ⏳ **T8.6** Test de bout en bout après installation du script SQL côté Supabase.
 
+### Phase 9 — Interface façon réseau social de console (style inspiré, visuels originaux)
+Choix : couleur principale verte vive (teinte propre au site), barre de navigation **à gauche** (aussi sur téléphone), salons publics **oui**.
+- **T9.1** Base visuelle : fond clair quadrillé de carrés arrondis, cartes blanches très arrondies, bandeaux en dégradé à damier, thème sombre.
+- **T9.2** Barre latérale gauche : Mon profil, Fil d'activité, Salons, Créer (dessin/toile/jeux), Messages, Notifications, Retour ; badges.
+- **T9.3** Accueil « place publique » : tuiles brillantes des modes, Bouilles des amis qui se baladent, bulles avec leurs derniers dessins.
+- **T9.4** Fil d'activité : avatar à gauche, carte-bulle (pseudo, « il y a 3 min », dessin/texte), « Ouais ! » + commentaires, bouton flottant « Publier ».
+- **T9.5** Publications texte ou petit dessin fait sur place (SQL : image facultative + texte).
+- **T9.6** Profil : en-tête (Bouille, nom, @pseudo, bio, amis), onglets Publications / Ouais.
+- **T9.7** Notifications (demandes d'ami, Ouais, commentaires, groupes) — table + déclencheurs SQL.
+- **T9.8** Salons publics par thème : à la une, nouveaux, favoris ; signaler + modération.
+- **T9.9** Harmonisation des autres pages (les éditeurs de dessin ne changent pas).
+
+### Phase 10 — Créateur de « Bouille » (personnage, buste ou corps entier)
+- **T10.1** Moteur SVG en couches : visage, teint, coiffure avant/arrière, sourcils, yeux, nez, bouche, oreilles, barbe, moustache, lunettes, joues/rides, corps + vêtement ; réglages taille/hauteur/écart/rotation/miroir ; Bouille = petit JSON.
+- **T10.2** Bibliothèque de parties (≈ 12 visages, 40 coiffures, 30 yeux, 20 sourcils, 15 nez, 25 bouches, barbes, moustaches, lunettes) + palettes.
+- **T10.3** Écran de création : grand aperçu à gauche (légère rotation de caméra), onglets + grille d'icônes à droite, curseurs, annuler/rétablir, « Au hasard » ; vue buste ou corps entier.
+- **T10.4** Peinture sur le visage : éditeur pixel 256×256 avec grille, aperçu en direct, palette verticale, symétrie ; copier la peinture d'un ami, retirer.
+- **T10.5** Étape « Crée ta Bouille » à l'inscription ; modifiable depuis le profil ; aussi possible sans compte (gardée sur l'appareil).
+- **T10.6** Expressions (neutre, contente, surprise, triste) utilisées dans le fil, les jeux et l'accueil.
+- **T10.7** Stockage : colonne `avatar` (JSON) dans `profiles`, peinture en PNG dans le bucket `avatars`, rendu PNG en cache.
+
+Ordre : T9.1–T9.2 → T10.1–T10.3 → T10.5, T9.4, T9.6 → T10.4 → T9.3 → T10.6, T9.5, T9.7, T9.9 → T9.8.
+
 ### Ordre conseillé
 `Phase 0 → Phase 1 (T1.1–T1.6) → Phase 3 (mobile) et Phase 2 (desktop) en parallèle → Phase 4 → Phase 5 → Phase 6 → reste de la Phase 1 → Phase 7`.
 Ainsi tu as très vite une appli de dessin utilisable sur téléphone, puis la toile partagée, puis les jeux.
