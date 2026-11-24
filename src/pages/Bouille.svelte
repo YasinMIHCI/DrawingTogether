@@ -13,6 +13,7 @@
   import { auth, saveBouille } from '../social/auth.svelte';
   import { router } from '../lib/router.svelte';
   import FacePaint from '../ui/bouille/FacePaint.svelte';
+  import Bouille3DView from '../ui/bouille/Bouille3DView.svelte';
   import { EXPRESSIONS, type Expression } from '../bouille/render';
 
   /** Créateur de Bouille : aperçu à gauche, parties et réglages à droite. */
@@ -28,6 +29,23 @@
   let cat = $state<Category>('face');
   let view = $state<View>('bust');
   let turn = $state(0);
+  // 3D par défaut (choix mémorisé), 2D si l'appareil ne la gère pas
+  let mode3d = $state(readMode());
+  let yaw = $state(0);
+  function readMode(): boolean {
+    try {
+      return localStorage.getItem('dt.bouille3d') !== '0';
+    } catch {
+      return true;
+    }
+  }
+  $effect(() => {
+    try {
+      localStorage.setItem('dt.bouille3d', mode3d ? '1' : '0');
+    } catch {
+      /* rien */
+    }
+  });
   let busy = $state(false);
   let painting = $state(false);
   let expr = $state<Expression>('neutral');
@@ -121,6 +139,10 @@
       <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="m15 14 5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
     </button>
     <button class="tool wide" onclick={() => edit(() => (b = randomBouille()))}>🎲 <span class="lbl">{t('bou.random')}</span></button>
+    <div class="seg" role="group" aria-label="2D / 3D">
+      <button aria-pressed={!mode3d} onclick={() => (mode3d = false)}>2D</button>
+      <button aria-pressed={mode3d} onclick={() => (mode3d = true)}>3D</button>
+    </div>
     <div class="seg" role="group">
       <button aria-pressed={view === 'bust'} onclick={() => (view = 'bust')}>{t('bou.bust')}</button>
       <button aria-pressed={view === 'full'} onclick={() => (view = 'full')}>{t('bou.full')}</button>
@@ -133,10 +155,17 @@
   </header>
 
   <section class="stage">
-    <div class="preview" role="img" aria-label={t('bou.title')} onpointerdown={down} onpointermove={move} onpointerup={() => (drag = null)} onpointercancel={() => (drag = null)}>
-      {@html preview}
-    </div>
-    <button class="reset" onclick={() => (turn = 0)} disabled={turn === 0}>⟲ {t('bou.resetView')}</button>
+    {#if mode3d}
+      <div class="preview" aria-label={t('bou.title')}>
+        <Bouille3DView bouille={b} {view} {expr} bind:yaw>{@html preview}</Bouille3DView>
+      </div>
+      <button class="reset" onclick={() => (yaw = 0)} disabled={yaw === 0}>⟲ {t('bou.resetView')}</button>
+    {:else}
+      <div class="preview" role="img" aria-label={t('bou.title')} onpointerdown={down} onpointermove={move} onpointerup={() => (drag = null)} onpointercancel={() => (drag = null)}>
+        {@html preview}
+      </div>
+      <button class="reset" onclick={() => (turn = 0)} disabled={turn === 0}>⟲ {t('bou.resetView')}</button>
+    {/if}
     <div class="exprs" role="group" aria-label={t('bou.expr')}>
       {#each EXPRESSIONS as e (e)}
         <button class:on={expr === e} aria-pressed={expr === e} title={t(`bou.expr.${e}` as Key)} aria-label={t(`bou.expr.${e}` as Key)} onclick={() => (expr = e)}>

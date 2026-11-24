@@ -188,6 +188,11 @@ Ordre : T9.1–T9.2 → T10.1–T10.3 → T10.5, T9.4, T9.6 → T10.4 → T9.3 �
 - ✅ **T11.3** Défis de la semaine dans le salon « Défis du moment » (un thème par semaine, semaines précédentes). Script `social-5.sql`.
 - ✅ **T11.4** Humeur choisie en publiant : la Bouille de l'auteur prend l'expression choisie dans le fil.
 
+### Phase 12 — Bouille en 3D (three.js)
+- ✅ **T12.1** Tête en volume (profil = forme du visage 2D), traits du visage plaqués (expressions, peinture), oreilles, lunettes, corps (cou, torse, bras, mains, jambes, chaussures ; grandeur, carrure), rotation au doigt, choix 2D / 3D dans le créateur. Cheveux provisoires.
+- **T12.2** Les 24 coiffures en volume.
+- **T12.3** Images de la Bouille 3D partout dans le site ; 3D animée sur la place de l'accueil (ordinateur).
+
 ### Ordre conseillé
 `Phase 0 → Phase 1 (T1.1–T1.6) → Phase 3 (mobile) et Phase 2 (desktop) en parallèle → Phase 4 → Phase 5 → Phase 6 → reste de la Phase 1 → Phase 7`.
 Ainsi tu as très vite une appli de dessin utilisable sur téléphone, puis la toile partagée, puis les jeux.

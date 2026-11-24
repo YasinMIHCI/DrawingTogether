@@ -19,6 +19,8 @@ export interface RenderOptions {
   viewBox?: string;
   /** Ne pas afficher la peinture du visage (fond de l'éditeur de peinture) */
   noPaint?: boolean;
+  /** Seulement les traits du visage, sur fond transparent, cadrés 0 0 200 200 (texture de la Bouille 3D) */
+  featuresOnly?: boolean;
 }
 
 export type Expression = 'neutral' | 'happy' | 'surprised' | 'sad' | 'angry' | 'wink';
@@ -412,9 +414,17 @@ export function renderBouille(b: BouilleData, opt: RenderOptions = {}): string {
   const parts: string[] = [];
   const bod = body(b, view, skin);
 
-  if (!only || only === 'body') parts.push(`<g transform="translate(${-turn * 2} 0)">${bod.svg}</g>`);
-  if (!only || only === 'hair') parts.push(`<g transform="translate(${-turn * 3} 0) ${flip}">${hair.back}</g>`);
-  if (!only || only === 'hair' || only === 'face' || only === 'beard' || only === 'mark') {
+  const fo = !!opt.featuresOnly;
+  if (fo) {
+    if (b.paint && isSafePaint(b.paint) && !opt.noPaint) {
+      parts.push(
+        `<clipPath id="${id}p"><path d="${face.d}"/></clipPath><image href="${b.paint}" x="${PAINT_BOX.x}" y="${PAINT_BOX.y}" width="${PAINT_BOX.s}" height="${PAINT_BOX.s}" ` +
+          `preserveAspectRatio="none" clip-path="url(#${id}p)" style="image-rendering:pixelated"/>`,
+      );
+    }
+  } else if (!only || only === 'body') parts.push(`<g transform="translate(${-turn * 2} 0)">${bod.svg}</g>`);
+  if (!fo && (!only || only === 'hair')) parts.push(`<g transform="translate(${-turn * 3} 0) ${flip}">${hair.back}</g>`);
+  if (!fo && (!only || only === 'hair' || only === 'face' || only === 'beard' || only === 'mark')) {
     // Oreilles, visage
     const ear = (side: 1 | -1) =>
       `<g transform="translate(${100 + side * (FACES[b.face.s]?.[0] ?? 58) + side * 4 - turn * 4} 114)"><ellipse rx="9" ry="13.5" fill="${skin}" stroke="${skinLine}" stroke-width="1.6"/>` +
@@ -446,11 +456,12 @@ export function renderBouille(b: BouilleData, opt: RenderOptions = {}): string {
   if (show('mouth')) feats.push(`<g transform="translate(100 ${mouthY}) scale(${k(b.mouth.z)})">${mouth(ex.mouth ?? b.mouth.s, LIP[b.mouth.c] ?? LIP[0])}</g>`);
   if (show('must')) feats.push(`<g transform="translate(100 ${mustY}) scale(${k(b.must.z)})">${mustache(b.must.s, hairC)}</g>`);
   if (feats.length) parts.push(`<g transform="translate(${tx} 0)">${feats.join('')}</g>`);
-  if (!only || only === 'hair') parts.push(`<g transform="translate(${turn * 3} 0) ${flip}">${hair.front}</g>`);
-  if (show('glasses')) parts.push(`<g transform="translate(${100 + tx} ${glassY}) scale(${k(b.glasses.z)})">${glasses(b.glasses.s, GLASS[b.glasses.c] ?? GLASS[0], eyeDx / k(b.glasses.z))}</g>`);
+  if (!fo && (!only || only === 'hair')) parts.push(`<g transform="translate(${turn * 3} 0) ${flip}">${hair.front}</g>`);
+  if (!fo && show('glasses')) parts.push(`<g transform="translate(${100 + tx} ${glassY}) scale(${k(b.glasses.z)})">${glasses(b.glasses.s, GLASS[b.glasses.c] ?? GLASS[0], eyeDx / k(b.glasses.z))}</g>`);
 
   let vb: string;
-  if (opt.viewBox) vb = opt.viewBox;
+  if (fo) vb = '0 0 200 200';
+  else if (opt.viewBox) vb = opt.viewBox;
   else if (only && VIEWBOX[only]) vb = VIEWBOX[only]!;
   else if (only === 'hair') vb = '-14 -16 228 240';
   else if (view === 'full' || only === 'body') vb = `-30 -10 260 ${bod.bottom + 16}`;
@@ -493,3 +504,14 @@ export async function toDataUrl(url: string): Promise<string> {
     r.readAsDataURL(blob);
   });
 }
+
+/** Constantes de forme exportées pour la Bouille 3D : [demi-largeur des joues, demi-largeur de la mâchoire, y du menton, rondeur]. */
+export const FACE_SHAPES = FACES;
+/** Position des yeux (repère 2D) pour placer les lunettes en 3D. */
+export function eyeLayout(b: BouilleData): { y: number; dx: number; glassY: number; glassK: number } {
+  const y = 112 + b.eyes.y * 2.5;
+  return { y, dx: 23 + b.eyes.x * 1.6, glassY: y + b.glasses.y * 2, glassK: 1 + b.glasses.z * 0.09 };
+}
+
+/** Coiffures (calotte avant, volume arrière) pour la Bouille 3D. */
+export const HAIR_STYLES = HAIRS;
