@@ -209,16 +209,19 @@ async function saveBouilleJson(json: string): Promise<void> {
 export async function saveBouille(json: string, png: Blob): Promise<string> {
   if (!auth.userId) return json;
   // La peinture du visage (data URL) part dans le stockage ; le JSON garde son adresse
-  const data = JSON.parse(json) as { paint?: string };
-  if (data.paint?.startsWith('data:')) {
+  const data = JSON.parse(json) as Record<string, unknown>;
+  const sheets = [['paint', 'paint.png'], ['paintHead', 'paint-head.png'], ['paintBody', 'paint-body.png'], ['paintBack', 'paint-back.png']];
+  for (const [key, file] of sheets) {
+    const v = data[key];
+    if (typeof v !== 'string' || !v.startsWith('data:')) continue;
     const sb = await getSupabase();
-    const blob = await (await fetch(data.paint)).blob();
-    const path = `${auth.userId}/paint.png`;
+    const blob = await (await fetch(v)).blob();
+    const path = `${auth.userId}/${file}`;
     const up = await sb.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/png' });
     if (up.error) throw new AuthFailure(mapError(up.error.message));
-    data.paint = `${sb.storage.from('avatars').getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
-    json = JSON.stringify(data);
+    data[key] = `${sb.storage.from('avatars').getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
   }
+  json = JSON.stringify(data);
   await uploadAvatar(png);
   await saveBouilleJson(json).catch(() => {});
   return json;

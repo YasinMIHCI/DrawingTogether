@@ -344,8 +344,8 @@ function body(b: BouilleData, view: View, skin: string): { svg: string; bottom: 
       bottom: 226,
     };
   }
-  const hf = 1 + b.body.h * 0.06;
-  const bw = 1 + b.body.w * 0.08;
+  const hf = 1 + b.body.h * 0.12;
+  const bw = 1 + b.body.w * 0.1;
   const top = 182;
   const tb = top + 54 * hf;
   const sw = 34 * bw;
@@ -515,3 +515,8 @@ export function eyeLayout(b: BouilleData): { y: number; dx: number; glassY: numb
 
 /** Coiffures (calotte avant, volume arrière) pour la Bouille 3D. */
 export const HAIR_STYLES = HAIRS;
+
+/** Contour du visage (chemin SVG, repère 2D) d'une forme. */
+export function faceOutline(shape: number): string {
+  return facePath(shape).d;
+}

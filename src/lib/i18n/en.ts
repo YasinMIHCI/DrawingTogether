@@ -842,4 +842,13 @@ export const en: Dict = {
   'ch.empty': "Nobody has taken up this challenge yet: your turn!",
   'ch.feedBanner': "Challenge of the week: {theme}",
   'bou.cat.paint': "Face paint",
+  'paint.choose': "Pick the area to paint, then how: on a flat sheet, or right on your 3D Bouille.",
+  'paint.sheet.face': "Face",
+  'paint.sheet.head': "Back of the head",
+  'paint.sheet.body': "Body (front)",
+  'paint.sheet.back': "Back",
+  'paint.sheet2d': "2D sheet",
+  'paint.on3d': "On the 3D model",
+  'paint.turnLeft': "Turn left",
+  'paint.turnRight': "Turn right",
 };

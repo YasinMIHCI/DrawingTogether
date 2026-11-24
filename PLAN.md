@@ -190,7 +190,9 @@ Ordre : T9.1–T9.2 → T10.1–T10.3 → T10.5, T9.4, T9.6 → T10.4 → T9.3 �
 
 ### Phase 12 — Bouille en 3D (three.js)
 - ✅ **T12.1** Tête en volume (profil = forme du visage 2D), traits du visage plaqués (expressions, peinture), oreilles, lunettes, corps (cou, torse, bras, mains, jambes, chaussures ; grandeur, carrure), rotation au doigt, choix 2D / 3D dans le créateur. Cheveux provisoires.
-- **T12.2** Les 24 coiffures en volume.
+- ✅ **T12.1b** Corps modélisé dans Blender (`tools/blender/build_body.py` → `public/models/bouille-body.glb`) : une seule pièce, cou fixe, formes Grandeur / Carrure (réglage plus marqué), couleurs par zone.
+- ✅ **T12.1c** Peinture sur 4 zones (visage, arrière de la tête, corps devant, dos), au choix sur une feuille 2D ou directement sur le modèle 3D.
+- **T12.2** Les 24 coiffures en volume (les coques actuelles suivent déjà le type de frange).
 - **T12.3** Images de la Bouille 3D partout dans le site ; 3D animée sur la place de l'accueil (ordinateur).
 
 ### Ordre conseillé

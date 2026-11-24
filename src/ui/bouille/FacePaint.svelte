@@ -1,15 +1,22 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { PAINT_BOX, PAINT_SIZE, parseBouille, type BouilleData } from '../../bouille/model';
+  import { PAINT_BOX, PAINT_SHEETS, parseBouille, type BouilleData, type PaintSheet } from '../../bouille/model';
   import { renderBouille, toDataUrl } from '../../bouille/render';
   import { friendState, profilesWithBouille } from '../../social/api';
   import { auth } from '../../social/auth.svelte';
   import { t } from '../../lib/i18n/t.svelte';
 
   /** Peinture sur le visage, en pixels : crayon, gomme, pot, pipette, symétrie ; aperçu en direct à gauche. */
-  let { bouille, onsave, oncancel }: { bouille: BouilleData; onsave: (paint: string | null) => void; oncancel: () => void } = $props();
+  /** sheet : quelle feuille (visage, arrière de la tête, corps devant, dos) ; guide : image de fond pour le corps. */
+  let { bouille, sheet = 'face', guide = null, onsave, oncancel }: {
+    bouille: BouilleData; sheet?: PaintSheet; guide?: string | null; onsave: (paint: string | null) => void; oncancel: () => void;
+  } = $props();
 
-  const N = PAINT_SIZE;
+  // Taille de la feuille (fixe pendant l'édition)
+  const info = PAINT_SHEETS[(() => sheet)()];
+  const N = info.w;
+  const M = info.h;
+  const initial = (() => bouille[info.key as keyof BouilleData] as string | undefined)();
   const PALETTE = ['#1f1a17', '#ffffff', '#8a5a3a', '#e8463a', '#f59f2f', '#f7d046', '#9bd33f', '#2a8a4a', '#3d7be0', '#5cb8e6', '#8a5cd6', '#ef8fb7', '#f2c6a0', '#9aa0a6'];
   type Tool = 'pen' | 'eraser' | 'fill' | 'picker';
   let tool = $state<Tool>('pen');
@@ -26,12 +33,13 @@
   let showFriends = $state(false);
 
   const background = $derived(renderBouille({ ...bouille, paint: undefined }, { only: 'face', noPaint: true, viewBox: `${PAINT_BOX.x} ${PAINT_BOX.y} ${PAINT_BOX.s} ${PAINT_BOX.s}` }));
-  const preview = $derived(renderBouille({ ...bouille, paint: current }, { view: 'head' }));
+  const isFace = info.key === 'paint';
+  const preview = $derived(isFace ? renderBouille({ ...bouille, paint: current }, { view: 'head' }) : '');
 
   onMount(async () => {
     ctx = canvas!.getContext('2d', { willReadFrequently: true })!;
     ctx.imageSmoothingEnabled = false;
-    if (bouille.paint) await drawImage(bouille.paint.startsWith('data:') ? bouille.paint : await toDataUrl(bouille.paint).catch(() => ''));
+    if (initial) await drawImage(initial.startsWith('data:') ? initial : await toDataUrl(initial).catch(() => ''));
     refresh();
   });
 
@@ -40,12 +48,12 @@
     const img = new Image();
     img.src = src;
     await img.decode().catch(() => {});
-    ctx.clearRect(0, 0, N, N);
-    ctx.drawImage(img, 0, 0, N, N);
+    ctx.clearRect(0, 0, N, M);
+    ctx.drawImage(img, 0, 0, N, M);
   }
 
   function isEmpty(): boolean {
-    const d = ctx.getImageData(0, 0, N, N).data;
+    const d = ctx.getImageData(0, 0, N, M).data;
     for (let i = 3; i < d.length; i += 4) if (d[i]) return false;
     return true;
   }
@@ -54,19 +62,19 @@
     current = isEmpty() ? undefined : canvas!.toDataURL('image/png');
   }
   function snapshot() {
-    past = [...past.slice(-40), ctx.getImageData(0, 0, N, N)];
+    past = [...past.slice(-40), ctx.getImageData(0, 0, N, M)];
     future = [];
   }
   function undo() {
     if (!past.length) return;
-    future = [...future, ctx.getImageData(0, 0, N, N)];
+    future = [...future, ctx.getImageData(0, 0, N, M)];
     ctx.putImageData(past.at(-1)!, 0, 0);
     past = past.slice(0, -1);
     refresh();
   }
   function redo() {
     if (!future.length) return;
-    past = [...past, ctx.getImageData(0, 0, N, N)];
+    past = [...past, ctx.getImageData(0, 0, N, M)];
     ctx.putImageData(future.at(-1)!, 0, 0);
     future = future.slice(0, -1);
     refresh();
@@ -101,7 +109,7 @@
     return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 255];
   }
   function fill(x: number, y: number, mirrored = false) {
-    const img = ctx.getImageData(0, 0, N, N);
+    const img = ctx.getImageData(0, 0, N, M);
     const d = img.data;
     const at = (px: number, py: number) => (py * N + px) * 4;
     const start = at(x, y);
@@ -112,7 +120,7 @@
     const stack = [[x, y]];
     while (stack.length) {
       const [px, py] = stack.pop()!;
-      if (px < 0 || py < 0 || px >= N || py >= N) continue;
+      if (px < 0 || py < 0 || px >= N || py >= M) continue;
       const i = at(px, py);
       if (!same(i)) continue;
       d.set(rep, i);
@@ -131,7 +139,7 @@
   let last: [number, number] | null = null;
   const cell = (e: PointerEvent): [number, number] => {
     const r = canvas!.getBoundingClientRect();
-    return [Math.min(N - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * N))), Math.min(N - 1, Math.max(0, Math.floor(((e.clientY - r.top) / r.height) * N)))];
+    return [Math.min(N - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * N))), Math.min(M - 1, Math.max(0, Math.floor(((e.clientY - r.top) / r.height) * M)))];
   };
   function down(e: PointerEvent) {
     e.preventDefault();
@@ -164,7 +172,7 @@
 
   function clearAll() {
     snapshot();
-    ctx.clearRect(0, 0, N, N);
+    ctx.clearRect(0, 0, N, M);
     refresh();
   }
 
@@ -225,7 +233,8 @@
   </header>
 
   <aside class="side">
-    <div class="preview">{@html preview}</div>
+    {#if isFace}<div class="preview">{@html preview}</div>
+    {:else}<p class="zone">{t(`paint.sheet.${sheet}` as 'paint.title')}</p>{/if}
     {#if auth.userId}<button class="act" onclick={openFriends} aria-expanded={showFriends}>{t('paint.copy')}</button>{/if}
     <button class="act" onclick={clearAll} disabled={!current}>{t('paint.clear')}</button>
     {#if showFriends}
@@ -239,9 +248,9 @@
   </aside>
 
   <div class="board">
-    <div class="sheet">
-      <div class="bg" aria-hidden="true">{@html background}</div>
-      <canvas bind:this={canvas} width={N} height={N} class:grid aria-label={t('paint.title')}
+    <div class="sheet" style:aspect-ratio="{N} / {M}" style:width={M > N ? `min(100%, calc((100dvh - 120px) * ${N / M}))` : undefined}>
+      <div class="bg" aria-hidden="true">{#if guide}<img src={guide} alt="" />{:else}{@html background}{/if}</div>
+      <canvas bind:this={canvas} width={N} height={M} class:grid aria-label={t('paint.title')}
         onpointerdown={down} onpointermove={move} onpointerup={up} onpointercancel={up} onpointerleave={up}></canvas>
       {#if grid}<div class="lines" aria-hidden="true"></div>{/if}
     </div>
@@ -289,6 +298,8 @@
   .board { display: grid; place-items: center; padding: 14px; min-height: 0; min-width: 0; }
   .sheet { position: relative; width: min(100%, calc(100dvh - 120px)); aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: repeating-conic-gradient(#ddd6c6 0 25%, #ebe5d8 0 50%) 0 0 / 24px 24px; }
   .bg, canvas, .lines { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .bg img { width: 100%; height: 100%; display: block; opacity: 0.85; }
+  .zone { margin: 0; font-weight: 800; padding: 10px 12px; background: #fff; border-radius: 14px; }
   .bg :global(svg) { width: 100%; height: 100%; display: block; }
   canvas { image-rendering: pixelated; touch-action: none; cursor: crosshair; }
   .lines {

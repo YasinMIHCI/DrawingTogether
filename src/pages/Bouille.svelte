@@ -14,6 +14,8 @@
   import { router } from '../lib/router.svelte';
   import FacePaint from '../ui/bouille/FacePaint.svelte';
   import Bouille3DView from '../ui/bouille/Bouille3DView.svelte';
+  import { PAINT_SHEETS, type PaintSheet } from '../bouille/model';
+  import type { Bouille3D, Brush } from '../bouille/three3d';
   import { EXPRESSIONS, type Expression } from '../bouille/render';
 
   /** Créateur de Bouille : aperçu à gauche, parties et réglages à droite. */
@@ -48,6 +50,71 @@
   });
   let busy = $state(false);
   let painting = $state(false);
+  // Peinture : choix de la zone et de la méthode (feuille 2D ou directement sur le modèle 3D)
+  let choosing = $state(false);
+  let sheet = $state<PaintSheet>('face');
+  let guide = $state<string | null>(null);
+  let engine = $state.raw<Bouille3D | null>(null);
+  let painting3d = $state(false);
+  const PALETTE = ['#1f1a17', '#ffffff', '#8a5a3a', '#e8463a', '#f59f2f', '#f7d046', '#9bd33f', '#2a8a4a', '#3d7be0', '#5cb8e6', '#8a5cd6', '#ef8fb7', '#f2c6a0', '#9aa0a6'];
+  let color3d = $state(PALETTE[0]);
+  let size3d = $state(3);
+  let eraser3d = $state(false);
+  let mirror3d = $state(false);
+  let undo3d: Record<PaintSheet, ImageData>[] = [];
+  const SHEETS: PaintSheet[] = ['face', 'head', 'body', 'back'];
+  const brush3d = $derived<Brush | null>(painting3d ? { color: eraser3d ? null : color3d, size: size3d, mirror: mirror3d } : null);
+  function openSheet(k: PaintSheet, method: '2d' | '3d') {
+    choosing = false;
+    if (method === '3d') {
+      mode3d = true;
+      if (k === 'head' || k === 'back') yaw = Math.PI;
+      else yaw = 0;
+      view = k === 'body' || k === 'back' ? 'full' : 'bust';
+      undo3d = [];
+      painting3d = true;
+      return;
+    }
+    sheet = k;
+    guide = (k === 'body' || k === 'back') && engine ? engine.guide(k) : null;
+    painting = true;
+  }
+  function snapshot3d() {
+    if (!engine) return;
+    const snap = {} as Record<PaintSheet, ImageData>;
+    for (const k of SHEETS) {
+      const c = engine.sheets.canvases[k];
+      snap[k] = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+    }
+    undo3d = [...undo3d.slice(-30), snap];
+  }
+  function undoStroke() {
+    const snap = undo3d.pop();
+    if (!snap || !engine) return;
+    for (const k of SHEETS) engine.sheets.canvases[k].getContext('2d')!.putImageData(snap[k], 0, 0);
+    engine.refreshPaint();
+    undo3d = [...undo3d];
+  }
+  function finish3d(save: boolean) {
+    const e = engine;
+    painting3d = false;
+    if (!e) return;
+    if (!save) {
+      // On recharge les peintures d'origine
+      for (const k of SHEETS) e.sheets.remember(k, '\u0000');
+      e.set($state.snapshot(b) as BouilleData, { view, expr });
+      return;
+    }
+    edit(() => {
+      for (const k of SHEETS) {
+        const v = e.sheets.export(k);
+        const key = PAINT_SHEETS[k].key;
+        if (v) (b as unknown as Record<string, string>)[key] = v;
+        else delete (b as unknown as Record<string, string>)[key];
+        e.sheets.remember(k, v);
+      }
+    });
+  }
   let expr = $state<Expression>('neutral');
   let error = $state<string | null>(null);
 
@@ -157,7 +224,30 @@
   <section class="stage">
     {#if mode3d}
       <div class="preview" aria-label={t('bou.title')}>
-        <Bouille3DView bouille={b} {view} {expr} bind:yaw>{@html preview}</Bouille3DView>
+        <Bouille3DView bouille={b} {view} {expr} bind:yaw bind:engine brush={brush3d} onstroke={snapshot3d}>{@html preview}</Bouille3DView>
+        {#if brush3d}
+          <div class="p3d" role="toolbar" aria-label={t('paint.title')}>
+            <div class="p3d-row">
+              {#each PALETTE as c (c)}
+                <button class="sw3" class:on={!eraser3d && color3d === c} style:--c={c} aria-label={c} onclick={() => ((color3d = c), (eraser3d = false))}></button>
+              {/each}
+              <label class="sw3 custom" title={t('paint.custom')}><input type="color" bind:value={color3d} oninput={() => (eraser3d = false)} aria-label={t('paint.custom')} /></label>
+            </div>
+            <div class="p3d-row">
+              {#each [1, 3, 6, 10] as s (s)}
+                <button class="b3" class:on={size3d === s} aria-label="{t('paint.size')} {s}" onclick={() => (size3d = s)}><span style:width="{3 + s * 1.6}px" style:height="{3 + s * 1.6}px"></span></button>
+              {/each}
+              <button class="b3" class:on={eraser3d} onclick={() => (eraser3d = !eraser3d)} title={t('paint.eraser')} aria-label={t('paint.eraser')}>🧽</button>
+              <button class="b3" class:on={mirror3d} onclick={() => (mirror3d = !mirror3d)} title={t('paint.mirror')} aria-label={t('paint.mirror')}>⇋</button>
+              <button class="b3" onclick={() => (yaw -= Math.PI / 4)} title={t('paint.turnLeft')} aria-label={t('paint.turnLeft')}>⟲</button>
+              <button class="b3" onclick={() => (yaw += Math.PI / 4)} title={t('paint.turnRight')} aria-label={t('paint.turnRight')}>⟳</button>
+              <button class="b3" onclick={undoStroke} title={t('bou.undo')} aria-label={t('bou.undo')}>↶</button>
+              <span class="grow"></span>
+              <button class="b3 txt" onclick={() => finish3d(false)}>{t('bou.quit')}</button>
+              <button class="b3 txt ok" onclick={() => finish3d(true)}>{t('bou.done')}</button>
+            </div>
+          </div>
+        {/if}
       </div>
       <button class="reset" onclick={() => (yaw = 0)} disabled={yaw === 0}>⟲ {t('bou.resetView')}</button>
     {:else}
@@ -187,7 +277,7 @@
         </button>
         {#if c === 'face'}
           <!-- Peinture du visage : onglet à part pour qu'on la trouve -->
-          <button class="paint-tab" onclick={() => (painting = true)} title={t('paint.title')}>
+          <button class="paint-tab" onclick={() => (choosing = true)} title={t('paint.title')}>
             <span class="ti">🖌</span>
             <span>{t('bou.cat.paint')}</span>
           </button>
@@ -207,7 +297,7 @@
         </div>
         {#if cat === 'face'}
           <div class="paint-row">
-            <button class="act primary" onclick={() => (painting = true)}>🖌 {b.paint ? t('paint.edit') : t('paint.add')}</button>
+            <button class="act primary" onclick={() => (choosing = true)}>🖌 {b.paint ? t('paint.edit') : t('paint.add')}</button>
             {#if b.paint}<button class="act" onclick={() => edit(() => (b.paint = undefined))}>{t('paint.remove')}</button>{/if}
           </div>
         {/if}
@@ -307,6 +397,25 @@
   .exprs button { width: 48px; height: 44px; padding: 2px; border: 0; border-radius: 12px; background: #fff; cursor: pointer; box-shadow: 0 3px 0 rgba(0, 0, 0, 0.1); }
   .exprs button.on { background: var(--orange); }
   .exprs :global(svg) { width: 100%; height: 100%; background: #fff; border-radius: 9px; }
+  .p3d { position: absolute; left: 10px; right: 10px; bottom: 10px; display: grid; gap: 6px; padding: 8px; border-radius: 16px; background: rgba(255, 255, 255, 0.92); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15); }
+  .preview { position: relative; }
+  .p3d-row { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .sw3 { position: relative; width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; background: var(--c); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); cursor: pointer; padding: 0; }
+  .sw3.on { outline: 3px solid var(--orange); }
+  .sw3.custom { background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); }
+  .sw3.custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .b3 { min-width: 36px; height: 36px; border: 0; border-radius: 10px; background: #f3ead5; font: inherit; font-weight: 800; cursor: pointer; display: grid; place-items: center; color: var(--ink-b); }
+  .b3 span { display: block; background: var(--ink-b); border-radius: 2px; }
+  .b3.on { background: var(--orange); color: #fff; }
+  .b3.on span { background: #fff; }
+  .b3.txt { padding: 0 12px; }
+  .b3.ok { background: linear-gradient(#f6a83a, var(--orange)); color: #fff; }
+  .p3d .grow { flex: 1; }
+  .chooser-bg { position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.4); display: grid; place-items: center; padding: 12px; }
+  .chooser { background: #f7edd5; color: var(--ink-b); border-radius: 22px; padding: 16px; width: min(520px, 100%); display: grid; gap: 10px; }
+  .chooser h2 { margin: 0; }
+  .zone-row { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; background: #fff; padding: 8px 10px; border-radius: 14px; }
+  @media (max-width: 480px) { .zone-row { grid-template-columns: 1fr 1fr; } .zone-row b { grid-column: 1 / -1; } }
   .paint-row { display: flex; gap: 8px; flex-wrap: wrap; }
   .act { border: 0; border-radius: 14px; padding: 10px 16px; font: inherit; font-weight: 800; background: #fff; color: var(--ink-b); box-shadow: 0 3px 0 rgba(0, 0, 0, 0.1); cursor: pointer; }
   .act.primary { background: linear-gradient(#f6a83a, var(--orange)); color: #fff; }
@@ -369,5 +478,23 @@
 </style>
 
 {#if painting}
-  <FacePaint bouille={b} oncancel={() => (painting = false)} onsave={(p) => { edit(() => (b.paint = p ?? undefined)); painting = false; }} />
+  <FacePaint bouille={b} {sheet} {guide} oncancel={() => (painting = false)}
+    onsave={(p) => { edit(() => { const k = PAINT_SHEETS[sheet].key; if (p) (b as unknown as Record<string, string>)[k] = p; else delete (b as unknown as Record<string, string>)[k]; }); painting = false; }} />
+{/if}
+
+{#if choosing}
+  <div class="chooser-bg" role="presentation" onclick={(e) => e.target === e.currentTarget && (choosing = false)}>
+    <div class="chooser" role="dialog" aria-label={t('paint.title')}>
+      <h2>🖌 {t('paint.title')}</h2>
+      <p class="note">{t('paint.choose')}</p>
+      {#each SHEETS as k (k)}
+        <div class="zone-row">
+          <b>{t(`paint.sheet.${k}` as Key)}{(b as unknown as Record<string, string>)[PAINT_SHEETS[k].key] ? ' ✓' : ''}</b>
+          <button class="act" onclick={() => openSheet(k, '2d')}>📄 {t('paint.sheet2d')}</button>
+          <button class="act primary" onclick={() => openSheet(k, '3d')}>🧊 {t('paint.on3d')}</button>
+        </div>
+      {/each}
+      <button class="act" onclick={() => (choosing = false)}>{t('acc.cancel')}</button>
+    </div>
+  </div>
 {/if}

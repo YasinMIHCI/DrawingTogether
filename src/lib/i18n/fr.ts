@@ -840,4 +840,13 @@ export const fr = {
   'ch.empty': "Personne n'a encore relevé ce défi : à toi de jouer !",
   'ch.feedBanner': "Défi de la semaine : {theme}",
   'bou.cat.paint': "Peinture",
+  'paint.choose': "Choisis la zone à peindre, puis la méthode : sur une feuille à plat, ou directement sur ta Bouille en 3D.",
+  'paint.sheet.face': "Visage",
+  'paint.sheet.head': "Arrière de la tête",
+  'paint.sheet.body': "Corps (devant)",
+  'paint.sheet.back': "Dos",
+  'paint.sheet2d': "Feuille 2D",
+  'paint.on3d': "Sur le modèle 3D",
+  'paint.turnLeft': "Tourner à gauche",
+  'paint.turnRight': "Tourner à droite",
 } as const;

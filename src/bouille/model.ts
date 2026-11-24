@@ -25,7 +25,20 @@ export interface BouilleData {
   body: { h: number; w: number; c: number; p: number }; // taille, carrure, haut, bas
   /** Peinture sur le visage : image PNG (data URL en local, ou adresse publique une fois envoyée) */
   paint?: string;
+  /** Peinture de l'arrière de la tête, du corps (devant) et du dos — mêmes formats */
+  paintHead?: string;
+  paintBody?: string;
+  paintBack?: string;
 }
+
+/** Les 4 feuilles de peinture : champ de la Bouille, taille en pixels, nom du fichier en ligne. */
+export const PAINT_SHEETS = {
+  face: { key: 'paint', w: 128, h: 128, file: 'paint.png' },
+  head: { key: 'paintHead', w: 128, h: 128, file: 'paint-head.png' },
+  body: { key: 'paintBody', w: 128, h: 208, file: 'paint-body.png' },
+  back: { key: 'paintBack', w: 128, h: 208, file: 'paint-back.png' },
+} as const;
+export type PaintSheet = keyof typeof PAINT_SHEETS;
 
 /** Zone (repère de la Bouille) couverte par la peinture, et taille de l'image en pixels. */
 export const PAINT_BOX = { x: 18, y: 22, s: 164 } as const;
@@ -142,7 +155,10 @@ export function parseBouille(raw: unknown): BouilleData | null {
     h: clamp(o.body?.h, -4, 4), w: clamp(o.body?.w, -4, 4),
     c: clamp(o.body?.c, 0, CLOTH.length - 1, d.body.c), p: clamp(o.body?.p, 0, PANTS.length - 1),
   };
-  if (isSafePaint(o.paint)) out.paint = o.paint;
+  for (const s of Object.values(PAINT_SHEETS)) {
+    const v = (o as Record<string, unknown>)[s.key];
+    if (isSafePaint(v)) (out as unknown as Record<string, string>)[s.key] = v;
+  }
   return out;
 }
 
@@ -152,7 +168,10 @@ export const stringifyBouille = (b: BouilleData) => JSON.stringify(b);
 export function presenceBouille(json: string | null | undefined = undefined): string | null {
   const b = parseBouille(json === undefined ? loadLocal() : json);
   if (!b) return null;
-  if (b.paint?.startsWith('data:')) delete b.paint;
+  for (const s of Object.values(PAINT_SHEETS)) {
+    const k = s.key as keyof BouilleData;
+    if (typeof b[k] === 'string' && (b[k] as string).startsWith('data:')) delete b[k];
+  }
   return stringifyBouille(b);
 }
 function loadLocal(): string | null {
