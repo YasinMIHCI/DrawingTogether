@@ -15,11 +15,10 @@
   import type { IconName } from '../common/icons';
   import BrushPreview from '../common/BrushPreview.svelte';
   import { selectBrush, swapColors, tweakActiveBrush } from '../brushActions';
-  import { bindShortcuts, createCommands, formatKeys, type Command } from './commands';
+  import { bindShortcuts, createCommands, formatKeys, type Command, type MenuEntry } from './commands';
   import { effectCommands, filterCommands } from './menus';
   import { viewport, type Insets } from './viewport';
   import Dropdown from './Dropdown.svelte';
-  import type { MenuEntry } from './MenuBar.svelte';
   import ToolOptionsBar from './ToolOptionsBar.svelte';
   import ColorPicker from './ColorPicker.svelte';
   import LayersDocker from './LayersDocker.svelte';

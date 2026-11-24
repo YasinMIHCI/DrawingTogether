@@ -1,5 +1,5 @@
 import { FILTERS, type FilterKind } from '../../engine/tools/filters';
-import type { MenuDef } from './MenuBar.svelte';
+import type { MenuDef } from './commands';
 
 const filters = (group: 'filter' | 'effect') =>
   (Object.keys(FILTERS) as FilterKind[]).filter((k) => FILTERS[k].group === group).map((k) => `filter.${k}`);

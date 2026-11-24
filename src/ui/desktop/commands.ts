@@ -23,6 +23,12 @@ export interface Command {
   checked?: () => boolean;
 }
 
+export type MenuEntry = string | '-' | { head: Key };
+export interface MenuDef {
+  label: Key;
+  items: MenuEntry[];
+}
+
 export interface UiHooks {
   togglePanels(): void;
   showShortcuts(): void;

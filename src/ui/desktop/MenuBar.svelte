@@ -1,14 +1,7 @@
 <script lang="ts">
   import { t } from '../../lib/i18n/t.svelte';
-  import type { Key } from '../../lib/i18n/i18n.svelte';
   import Icon from '../common/Icon.svelte';
-  import { formatKeys, type Command } from './commands';
-
-  export type MenuEntry = string | '-' | { head: Key };
-  export interface MenuDef {
-    label: Key;
-    items: MenuEntry[];
-  }
+  import { formatKeys, type Command, type MenuDef } from './commands';
 
   let { menus, commands, tick }: { menus: MenuDef[]; commands: Record<string, Command>; tick: number } = $props();
   let open = $state(-1);

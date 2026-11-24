@@ -7,3 +7,9 @@ it('parses hash routes', () => {
   expect(parseHash('#/shared/ABCD')).toBe('shared');
   expect(parseHash('#/nope')).toBe('home');
 });
+
+import { parseParam } from '../src/lib/router.svelte';
+it('parses the route parameter', () => {
+  expect(parseParam('#/shared/ABC123')).toBe('ABC123');
+  expect(parseParam('#/shared')).toBe('');
+});

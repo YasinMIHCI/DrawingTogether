@@ -8,10 +8,16 @@ export function parseHash(hash: string): Route {
   return (ROUTES as string[]).includes(name) ? (name as Route) : 'home';
 }
 
-export const router = $state({ route: parseHash(location.hash) });
+/** Paramètre après la route : #/shared/ABC123 → « ABC123 ». */
+export function parseParam(hash: string): string {
+  return hash.replace(/^#\/?/, '').split('/')[1]?.split('?')[0] ?? '';
+}
+
+export const router = $state({ route: parseHash(location.hash), param: parseParam(location.hash) });
 
 window.addEventListener('hashchange', () => {
   router.route = parseHash(location.hash);
+  router.param = parseParam(location.hash);
 });
 
 export function href(route: Route): string {

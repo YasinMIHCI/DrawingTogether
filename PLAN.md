@@ -107,11 +107,11 @@ L'utilisateur bascule entre « Style Krita » et « Style Paint » dans les rég
 - ✅ **T3.9** Mise en page tablette (panneaux plus larges, éventuellement côte à côte en paysage).
 
 ### Phase 4 — Réseau et salles
-- **T4.1** Couche `Transport` Supabase Realtime (canaux *broadcast* pour les traits, *presence* pour la liste des joueurs). Seule la clé publique `anon` va dans le code, jamais la clé `service_role`.
-- **T4.2** Créer une salle (code court + lien d'invitation + QR code), rejoindre, quitter.
-- **T4.3** Lobby : liste des joueurs avec avatars, hôte (couronne), places vides, **8 joueurs max**.
-- **T4.4** Outils de l'hôte : exclure un joueur, verrouiller la salle, mot de passe ❓(Q7), transférer l'hôte.
-- **T4.5** Reconnexion après coupure, gestion du départ de l'hôte.
+- ✅ **T4.1** Couche `Transport` Supabase Realtime (canaux *broadcast* pour les traits, *presence* pour la liste des joueurs). Seule la clé publique `anon` va dans le code, jamais la clé `service_role`.
+- ✅ **T4.2** Créer une salle (code court + lien d'invitation + QR code), rejoindre, quitter.
+- ✅ **T4.3** Lobby : liste des joueurs avec avatars, hôte (couronne), places vides, **8 joueurs max**.
+- ✅ **T4.4** Outils de l'hôte : exclure un joueur, verrouiller la salle, mot de passe, transférer l'hôte. (Salles privées par code / lien / QR ; pas de liste publique.)
+- ✅ **T4.5** Reconnexion après coupure, gestion du départ de l'hôte.
 
 ### Phase 5 — Toile partagée
 - **T5.1** Grande toile synchronisée, curseurs des autres joueurs avec leur pseudo.
