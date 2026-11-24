@@ -11,6 +11,8 @@
   $effect(() => {
     document.documentElement.lang = settings.locale;
     document.documentElement.dataset.ui = uiStyle();
+    if (settings.theme === 'auto') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = settings.theme;
   });
 </script>
 

@@ -4,7 +4,7 @@
   import { settings } from '../../lib/settings.svelte';
   import { href } from '../../lib/router.svelte';
   import { t } from '../../lib/i18n/t.svelte';
-  import Icon from './Icon.svelte';
+  import Icon from '../common/Icon.svelte';
 
   let { editor, tick, onclose }: { editor: Editor; tick: number; onclose: () => void } = $props();
   const s = $derived((void tick, { bg: editor.doc.background, sel: editor.selection.active, clip: editor.hasClipboard }));

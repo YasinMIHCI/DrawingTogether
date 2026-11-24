@@ -3,8 +3,8 @@
   import { BLEND_MODES, type BlendMode } from '../../engine/layers';
   import { t } from '../../lib/i18n/t.svelte';
   import type { Key } from '../../lib/i18n/i18n.svelte';
-  import Icon from './Icon.svelte';
-  import type { IconName } from './icons';
+  import Icon from '../common/Icon.svelte';
+  import type { IconName } from '../common/icons';
   import MSlider from './MSlider.svelte';
 
   let { editor, tick }: { editor: Editor; tick: number } = $props();

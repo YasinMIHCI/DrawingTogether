@@ -87,13 +87,13 @@ Le **moteur de dessin est unique** : les deux interfaces (bureau / mobile) et to
 
 ### Phase 2 — Interface ordinateur : **deux interfaces au choix, Krita par défaut**
 L'utilisateur bascule entre « Style Krita » et « Style Paint » dans les réglages (choix mémorisé).
-- **T2.1** Barre de menus (Fichier, Édition, Image, Calque, Sélection, Filtres, Affichage).
-- **T2.2** Boîte à outils verticale à gauche + barre d'options de l'outil en haut.
-- **T2.3** Panneaux ancrés à droite : couleurs (roue + carré, HSV/RVB, hex, palettes), pinceaux, calques, navigateur.
-- **T2.4** Raccourcis clavier (B pinceau, E gomme, Ctrl+Z, [ ] taille, espace = main, etc.).
-- **T2.5** Panneaux redimensionnables / repliables, thème clair/sombre.
-- **T2.6** Interface « Style Paint » : ruban en haut (presse-papiers, image, outils, pinceaux, formes, taille, couleurs), toile au centre, barre d'état en bas.
-- **T2.7** Sélecteur de style d'interface (Krita / Paint / Mobile) dans les réglages.
+- ✅ **T2.1** Barre de menus (Fichier, Édition, Image, Calque, Sélection, Filtres, Affichage).
+- ✅ **T2.2** Boîte à outils verticale à gauche + barre d'options de l'outil en haut.
+- ✅ **T2.3** Panneaux ancrés à droite : couleurs (roue + carré, HSV/RVB, hex, palettes), pinceaux, calques, navigateur.
+- ✅ **T2.4** Raccourcis clavier (B pinceau, E gomme, G remplir, I pipette, U figure, T texte, M sélection, V transformer, L liquéfier, [ ] taille, X/D couleurs, Tab panneaux, Ctrl+Z/Y, Ctrl+O/S, Ctrl+J/E calques, 4/5/6 rotation…). Liste complète : Aide → Raccourcis clavier (Maj+?).
+- ✅ **T2.5** Panneaux redimensionnables / repliables, thème clair/sombre.
+- ✅ **T2.6** Interface « Style Paint » : ruban en haut (presse-papiers, image, outils, pinceaux, formes, taille, couleurs), toile au centre, barre d'état en bas.
+- ✅ **T2.7** Sélecteur de style d'interface (Krita / Paint / Mobile) dans les réglages.
 
 ### Phase 3 — Interface mobile / tablette (d'après tes captures)
 - ✅ **T3.1** Écran plein toile, en haut : retour, annuler/rétablir, galerie/aperçu, menu « … ».

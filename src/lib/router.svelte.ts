@@ -17,3 +17,7 @@ window.addEventListener('hashchange', () => {
 export function href(route: Route): string {
   return route === 'home' ? '#/' : `#/${route}`;
 }
+
+export function navigate(route: Route): void {
+  location.hash = href(route);
+}

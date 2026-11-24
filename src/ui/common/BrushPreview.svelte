@@ -2,19 +2,19 @@
   import { renderBrushPreview } from '../../engine/brush/preview';
   import type { BrushSettings } from '../../engine/brush/settings';
 
-  let { settings, color }: { settings: BrushSettings; color: string } = $props();
+  let { settings, color, height = 48 }: { settings: BrushSettings; color: string; height?: number } = $props();
   let canvas: HTMLCanvasElement;
 
   $effect(() => {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.width = Math.round(220 * dpr);
-    canvas.height = Math.round(48 * dpr);
+    canvas.height = Math.round(height * dpr);
     renderBrushPreview(canvas, settings, color);
   });
 </script>
 
-<canvas bind:this={canvas} aria-hidden="true"></canvas>
+<canvas bind:this={canvas} aria-hidden="true" style:height="{height}px"></canvas>
 
 <style>
-  canvas { display: block; width: 100%; height: 48px; }
+  canvas { display: block; width: 100%; }
 </style>

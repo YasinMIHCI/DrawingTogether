@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Editor } from '../../engine/editor';
   import { t } from '../../lib/i18n/t.svelte';
-  import Icon from './Icon.svelte';
-  import LayerThumb from './LayerThumb.svelte';
+  import Icon from '../common/Icon.svelte';
+  import LayerThumb from '../common/LayerThumb.svelte';
 
   let { editor, tick, width = 96, onmenu }: { editor: Editor; tick: number; width?: number; onmenu: () => void } = $props();
 

@@ -6,16 +6,37 @@
   import { dbGet, dbSet } from '../lib/db';
   import { downloadBlob, pickFile, timestampedName } from '../lib/download';
   import { t } from '../lib/i18n/t.svelte';
-  import DevPanel from '../ui/dev/DevPanel.svelte';
   import MobileUI from '../ui/mobile/MobileUI.svelte';
+  import KritaUI from '../ui/desktop/KritaUI.svelte';
+  import PaintUI from '../ui/desktop/PaintUI.svelte';
+  import type { Insets } from '../ui/desktop/viewport';
   import { uiStyle } from '../lib/screen.svelte';
-  import NewDocDialog from '../ui/dev/NewDocDialog.svelte';
-  import type { FileActions } from '../ui/dev/types';
+  import { isDark } from '../lib/theme.svelte';
+  import NewDocDialog from '../ui/common/NewDocDialog.svelte';
+  import type { FileActions } from '../ui/common/types';
 
   const AUTOSAVE_KEY = 'autosave';
   const touch = screen.info.coarse;
 
   let editor = $state.raw<Editor | null>(null);
+  // Zone de la toile entre les panneaux (interfaces bureau) ; 0 partout = plein écran
+  let insets = $state<Insets>({ top: 0, right: 0, bottom: 0, left: 0 });
+  let fittedFor: Editor | null = null;
+  function setViewport(r: Insets | null) {
+    insets = r ?? { top: 0, right: 0, bottom: 0, left: 0 };
+    if (r && editor && fittedFor !== editor) {
+      // Première mise en page de ce dessin : on ajuste la vue une fois la toile redimensionnée
+      fittedFor = editor;
+      const ed = editor;
+      requestAnimationFrame(() => requestAnimationFrame(() => ed.fit()));
+    }
+  }
+  const ui = $derived(uiStyle());
+
+  // Couleur autour de la toile selon le thème
+  $effect(() => {
+    editor?.setWorkspaceColor(isDark() ? (ui === 'mobile' ? '#1b1c20' : '#3a3b40') : ui === 'paint' ? '#dde3ea' : ui === 'mobile' ? '#c9cacd' : '#a9abb1');
+  });
   let showNew = $state(false);
   let status = $state('');
 
@@ -146,22 +167,24 @@
 <div class="draw" role="application" ondragover={(e) => e.preventDefault()} ondrop={onDrop}>
   {#if editor}
     {#key editor}
-      <canvas class="canvas-surface" use:attachEditor={editor}></canvas>
-      {#if uiStyle() === 'mobile'}
-        <MobileUI {editor} {files} {status} />
+      <canvas class="canvas-surface" use:attachEditor={editor}
+        style:top="{insets.top}px" style:left="{insets.left}px"
+        style:width="calc(100% - {insets.left + insets.right}px)" style:height="calc(100% - {insets.top + insets.bottom}px)"></canvas>
+      {#if ui === 'krita'}
+        <KritaUI {editor} {files} {status} {setViewport} />
+      {:else if ui === 'paint'}
+        <PaintUI {editor} {files} {status} {setViewport} />
       {:else}
-        <!-- Interfaces bureau Krita / Paint : phase 2. En attendant, panneau de test. -->
-        <DevPanel {editor} {files} {status} />
+        <MobileUI {editor} {files} {status} />
       {/if}
     {/key}
   {/if}
   {#if showNew}
-    <div class="dev"><NewDocDialog oncreate={newDocument} oncancel={() => (showNew = false)} /></div>
+    <NewDocDialog oncreate={newDocument} oncancel={() => (showNew = false)} />
   {/if}
 </div>
 
 <style>
-  .draw { position: fixed; inset: 0; overflow: hidden; --workspace: #c9cacd; }
-  @media (prefers-color-scheme: dark) { .draw { --workspace: #1b1c20; } }
-  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .draw { position: fixed; inset: 0; overflow: hidden; }
+  canvas { position: absolute; display: block; }
 </style>

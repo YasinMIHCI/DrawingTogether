@@ -1,9 +1,9 @@
 <script lang="ts">
   import { t } from '../../lib/i18n/t.svelte';
   import type { Key } from '../../lib/i18n/i18n.svelte';
-  import type { FileActions } from '../dev/types';
-  import Icon from './Icon.svelte';
-  import type { IconName } from './icons';
+  import type { FileActions } from '../common/types';
+  import Icon from '../common/Icon.svelte';
+  import type { IconName } from '../common/icons';
 
   let { files, onclose }: { files: FileActions; onclose: () => void } = $props();
   const items: { icon: IconName; label: Key; run: () => void }[] = [

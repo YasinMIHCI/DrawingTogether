@@ -2,8 +2,8 @@
   import type { ToolId } from '../../engine/editor';
   import { t } from '../../lib/i18n/t.svelte';
   import type { Key } from '../../lib/i18n/i18n.svelte';
-  import Icon from './Icon.svelte';
-  import type { IconName } from './icons';
+  import Icon from '../common/Icon.svelte';
+  import type { IconName } from '../common/icons';
 
   export type ToolChoice = ToolId | 'filters' | 'effects';
   let { tool, onpick }: { tool: ToolId; onpick: (c: ToolChoice) => void } = $props();

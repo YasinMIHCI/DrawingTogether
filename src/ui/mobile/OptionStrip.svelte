@@ -6,7 +6,7 @@
   import { TEXT_FONTS } from '../../engine/tools/text';
   import { brushPrefs, brushSettings, setBrushOverride } from '../../lib/brushPrefs.svelte';
   import { t } from '../../lib/i18n/t.svelte';
-  import Icon from './Icon.svelte';
+  import Icon from '../common/Icon.svelte';
   import MSlider from './MSlider.svelte';
   import { CHECKER, formatSize, posToSize, sizeToPos } from './sliders';
 

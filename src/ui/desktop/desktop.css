@@ -1,0 +1,75 @@
+/* Interfaces bureau (styles Krita et Paint) : thème clair et sombre. */
+.d {
+  --d-bg: #e6e7ea;
+  --d-panel: #f5f5f6;
+  --d-panel-2: #e3e4e8;
+  --d-text: #1f2023;
+  --d-soft: #64666d;
+  --d-line: #cdd0d5;
+  --d-accent: #2b7de9;
+  --d-accent-soft: rgba(43, 125, 233, 0.14);
+  --d-hover: rgba(0, 0, 0, 0.06);
+  --d-input: #ffffff;
+  --d-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  color: var(--d-text);
+  font: 13px/1.35 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: light;
+}
+.d.dark {
+  --d-bg: #28292d;
+  --d-panel: #313236;
+  --d-panel-2: #393a3f;
+  --d-text: #e4e4e7;
+  --d-soft: #a1a2a9;
+  --d-line: #46474d;
+  --d-accent: #4b9bff;
+  --d-accent-soft: rgba(75, 155, 255, 0.2);
+  --d-hover: rgba(255, 255, 255, 0.07);
+  --d-input: #25262a;
+  --d-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+.d button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+.d button:disabled { opacity: 0.4; cursor: default; }
+.d :focus-visible { outline: 2px solid var(--d-accent); outline-offset: 1px; }
+.d input, .d select, .d textarea {
+  font: inherit; color: var(--d-text); background: var(--d-input); border: 1px solid var(--d-line); border-radius: 4px;
+}
+.d select { height: 26px; padding: 0 4px; }
+.d input[type='number'], .d input[type='text'] { height: 26px; padding: 0 6px; }
+.d input[type='range'] { accent-color: var(--d-accent); }
+.d .d-ibtn {
+  display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 5px; color: var(--d-text);
+}
+.d .d-ibtn:hover:not(:disabled), .d .d-tbtn:hover:not(:disabled) { background: var(--d-hover); }
+.d .d-ibtn[aria-pressed='true'], .d .d-tbtn[aria-pressed='true'] { background: var(--d-accent-soft); color: var(--d-accent); }
+.d .d-tbtn {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 5px;
+  border: 1px solid var(--d-line); background: var(--d-input);
+}
+.d .d-tbtn.primary { background: var(--d-accent); border-color: var(--d-accent); color: #fff; }
+.d .d-sep { width: 1px; align-self: stretch; background: var(--d-line); margin: 4px 6px; }
+.d .d-label { color: var(--d-soft); white-space: nowrap; }
+.d .d-popover {
+  position: absolute; z-index: 30; min-width: 180px; background: var(--d-panel); border: 1px solid var(--d-line);
+  border-radius: 6px; box-shadow: var(--d-shadow); padding: 4px;
+}
+.d .d-mitem {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 26px; padding: 3px 10px 3px 6px;
+  border-radius: 4px; text-align: left; white-space: nowrap;
+}
+.d .d-mitem:hover:not(:disabled) { background: var(--d-accent); color: #fff; }
+.d .d-mitem .k { margin-left: auto; padding-left: 24px; color: var(--d-soft); font-size: 12px; }
+.d .d-mitem:hover:not(:disabled) .k { color: rgba(255, 255, 255, 0.8); }
+.d .d-mitem .chk { width: 16px; display: inline-grid; place-items: center; }
+.d .d-mhead { padding: 6px 8px 2px; color: var(--d-soft); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+.d .d-mline { height: 1px; background: var(--d-line); margin: 4px 2px; }
+.d .d-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); z-index: 40; display: grid; place-items: center; }
+.d .d-dialog {
+  background: var(--d-panel); border: 1px solid var(--d-line); border-radius: 8px; box-shadow: var(--d-shadow);
+  min-width: 340px; max-width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 64px); overflow: auto;
+}
+.d .d-dialog header { padding: 10px 14px; font-weight: 600; border-bottom: 1px solid var(--d-line); background: var(--d-panel-2); }
+.d .d-dialog .body { padding: 12px 14px; display: grid; gap: 10px; }
+.d .d-dialog footer { display: flex; gap: 8px; justify-content: flex-end; padding: 10px 14px; border-top: 1px solid var(--d-line); }
+.d .d-note { margin: 0; color: var(--d-soft); white-space: normal; }

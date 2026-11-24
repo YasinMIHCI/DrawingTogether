@@ -58,6 +58,18 @@ export const ICONS = {
   spray: ['M8 10h7v11H8z', 'M9.5 10V7h4v3', 'M18 5h.01', 'M20 3h.01', 'M20 7h.01', 'M22 5h.01'],
   drops: ['M8 4c-3 4-4 6-4 8a4 4 0 0 0 8 0c0-2-1-4-4-8z', 'M16.5 9c-2 3-3 4-3 6a3 3 0 0 0 6 0c0-2-1-3-3-6z'],
   star: ['M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z'],
+  zoomIn: [circle(10.5, 10.5, 6.5), 'M15.5 15.5L21 21', 'M10.5 7.5v6', 'M7.5 10.5h6'],
+  zoomOut: [circle(10.5, 10.5, 6.5), 'M15.5 15.5L21 21', 'M7.5 10.5h6'],
+  cut: [circle(6, 18, 3), circle(18, 18, 3), 'M8 16L19 4', 'M16 16L5 4'],
+  paste: ['M8 4h8v3H8z', 'M8 5.5H5V21h14V5.5h-3'],
+  palette: ['M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2s-1-1.5-1-2.5 1-1.5 2-1.5h2a4 4 0 0 0 4-4c0-4.5-4-8-9-8z', circle(7.5, 11, 1.2, true), circle(10, 7, 1.2, true), circle(15, 7, 1.2, true)],
+  compass: [circle(12, 12, 9), 'M15.5 8.5l-2 5-5 2 2-5z'],
+  sidebar: ['M3 4h18v16H3z', 'M15 4v16'],
+  keyboard: ['M3 6h18v12H3z', 'M7 10h.01', 'M11 10h.01', 'M15 10h.01', 'M7 14h10'],
+  sun: [circle(12, 12, 4), 'M12 2v2', 'M12 20v2', 'M2 12h2', 'M20 12h2', 'M4.9 4.9l1.4 1.4', 'M17.7 17.7l1.4 1.4', 'M4.9 19.1l1.4-1.4', 'M17.7 6.3l1.4-1.4'],
+  moon: ['M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'],
+  pin: ['M12 21v-6', 'M7 15h10l-2-4V5h1V3H8v2h1v6z'],
+  chevronLeft: ['M15 5l-7 7 7 7'],
 } satisfies Record<string, Shape[]>;
 
 export type IconName = keyof typeof ICONS;

@@ -99,11 +99,13 @@ export class Editor {
   private viewH = 0;
   private dpr = 1;
   private workspace = '#8a8f99';
+  private workspaceOverride: string | null = null;
   private hoverAt: Point | null = null;
   /** Pipette temporaire en cours (point écran), pour afficher la loupe. */
   private pickAt: Point | null = null;
   private raf = 0;
   private listeners = new Set<() => void>();
+  private hoverListeners = new Set<() => void>();
   private fitted = false;
 
   constructor(opts: EditorOptions) {
@@ -125,6 +127,12 @@ export class Editor {
   private changed(): void {
     this.requestRender();
     for (const fn of this.listeners) fn();
+  }
+
+  /** Abonnement aux déplacements du pointeur (barre d'état). */
+  subscribeHover(fn: () => void): () => void {
+    this.hoverListeners.add(fn);
+    return () => this.hoverListeners.delete(fn);
   }
 
   /** Prévient l'interface et redessine (après un changement fait de l'extérieur). */
@@ -152,7 +160,7 @@ export class Editor {
       this.viewH = r.height;
       canvas.width = Math.max(1, Math.round(r.width * this.dpr));
       canvas.height = Math.max(1, Math.round(r.height * this.dpr));
-      this.workspace = getComputedStyle(canvas).getPropertyValue('--workspace').trim() || this.workspace;
+      this.workspace = this.workspaceOverride ?? (getComputedStyle(canvas).getPropertyValue('--workspace').trim() || this.workspace);
       if (!this.fitted && r.width > 0) {
         this.fit();
         this.fitted = true;
@@ -224,6 +232,29 @@ export class Editor {
   fit(): void {
     this.view.fit(this.doc.width, this.doc.height, this.viewW, this.viewH);
     this.changed();
+  }
+
+  /** Taille de la zone d'affichage (px CSS). */
+  get viewSize(): { width: number; height: number } {
+    return { width: this.viewW, height: this.viewH };
+  }
+
+  /** Centre la vue sur un point du document (navigateur). */
+  centerOn(p: Point): void {
+    this.view.anchor(p, { x: this.viewW / 2, y: this.viewH / 2 });
+    this.changed();
+  }
+
+  /** Position du pointeur dans le document (barre d'état), ou null hors de la toile. */
+  get pointerDoc(): Point | null {
+    return this.hoverAt ? this.view.toDoc(this.hoverAt) : null;
+  }
+
+  /** Couleur de l'espace autour de la toile (suivant le thème). */
+  setWorkspaceColor(color: string): void {
+    this.workspaceOverride = color;
+    this.workspace = color;
+    this.requestRender();
   }
 
   setZoom(zoom: number): void {
@@ -425,6 +456,7 @@ export class Editor {
 
   private hover(p: Point | null): void {
     this.hoverAt = p;
+    for (const fn of this.hoverListeners) fn();
     if (p && this.tool === 'shape' && this.shape.kind === 'polygon' && this.poly.length) {
       this.polyFloat = this.view.toDoc(p);
       this.drawPolygon(false);
@@ -706,6 +738,25 @@ export class Editor {
       ctx.clearRect(r.x, r.y, r.w, r.h);
     }
     this.pushCommand(new PixelPatch('delete', layer, r, before, ctx.getImageData(r.x, r.y, r.w, r.h)));
+  }
+
+  /** Remplit la sélection (ou tout le calque) avec la couleur actuelle. */
+  fillSelection(): void {
+    const layer = this.editableLayer();
+    if (!layer) return;
+    const { width: w, height: h } = this.doc;
+    const r = this.selection.bounds ?? { x: 0, y: 0, w, h };
+    const ctx = layer.surface.ctx;
+    const before = ctx.getImageData(r.x, r.y, r.w, r.h);
+    const tmp = createSurface(r.w, r.h);
+    tmp.ctx.fillStyle = this.color;
+    tmp.ctx.fillRect(0, 0, r.w, r.h);
+    if (this.selection.canvas) {
+      tmp.ctx.globalCompositeOperation = 'destination-in';
+      tmp.ctx.drawImage(this.selection.canvas, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
+    }
+    ctx.drawImage(tmp.canvas, r.x, r.y);
+    this.pushCommand(new PixelPatch('fill', layer, r, before, ctx.getImageData(r.x, r.y, r.w, r.h)));
   }
 
   // --- Presse-papiers (interne) ---

@@ -11,9 +11,9 @@
   import { t } from '../../lib/i18n/t.svelte';
   import type { Key } from '../../lib/i18n/i18n.svelte';
   import { BRUSH_SLIDERS } from '../brushParams';
-  import BrushPreview from '../dev/BrushPreview.svelte';
-  import Icon from './Icon.svelte';
-  import type { IconName } from './icons';
+  import BrushPreview from '../common/BrushPreview.svelte';
+  import Icon from '../common/Icon.svelte';
+  import type { IconName } from '../common/icons';
   import MSlider from './MSlider.svelte';
   import { formatSize, posToSize, sizeToPos } from './sliders';
 

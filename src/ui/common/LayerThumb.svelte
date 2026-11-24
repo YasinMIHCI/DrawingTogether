@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CHECKER } from './sliders';
+  import { CHECKER } from '../mobile/sliders';
 
   /** Vignette d'un calque (ou du fond si `source` est null). */
   let { source, docW, docH, tick, background = null, width = 96 }: {

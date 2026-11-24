@@ -3,7 +3,7 @@
   import { hexToRgb, hsvToHex, isHexColor, normalizeHex, rgbToHex, rgbToHsv } from '../../engine/color';
   import { activePalette, addPalette, colorPrefs, removePalette } from '../../lib/colorPrefs.svelte';
   import { t } from '../../lib/i18n/t.svelte';
-  import Icon from './Icon.svelte';
+  import Icon from '../common/Icon.svelte';
   import MSlider from './MSlider.svelte';
   import ColorWheel from './ColorWheel.svelte';
   import { CHECKER } from './sliders';

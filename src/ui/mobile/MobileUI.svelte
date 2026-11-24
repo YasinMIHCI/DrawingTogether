@@ -6,9 +6,9 @@
   import { screen } from '../../lib/screen.svelte';
   import { t } from '../../lib/i18n/t.svelte';
   import { href } from '../../lib/router.svelte';
-  import type { FileActions } from '../dev/types';
-  import Icon from './Icon.svelte';
-  import type { IconName } from './icons';
+  import type { FileActions } from '../common/types';
+  import Icon from '../common/Icon.svelte';
+  import type { IconName } from '../common/icons';
   import ToolsPanel, { type ToolChoice } from './ToolsPanel.svelte';
   import BrushPanel from './BrushPanel.svelte';
   import ColorPanel from './ColorPanel.svelte';
