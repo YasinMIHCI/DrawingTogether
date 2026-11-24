@@ -7,6 +7,8 @@ export interface Command {
   redo(): void;
   /** Fusionne `next` dans cette commande (ex. glisser un curseur d'opacité). */
   merge?(next: Command): boolean;
+  /** Calques et zones de pixels modifiés (pour la synchronisation en réseau). */
+  affected?(): { layer: import('./layers').Layer; rect: import('./geometry').Rect }[];
 }
 
 export interface HistoryOptions {
@@ -19,6 +21,8 @@ export class History {
   private undone: Command[] = [];
   /** Augmente à chaque changement (sert à la sauvegarde automatique). */
   version = 0;
+  /** Appelé après chaque action enregistrée, annulée ou rétablie. */
+  onApply: ((cmd: Command) => void) | null = null;
 
   constructor(private readonly options: HistoryOptions) {}
 
@@ -46,9 +50,13 @@ export class History {
     this.version++;
     this.undone = [];
     const top = this.done[this.done.length - 1];
-    if (top?.merge?.(cmd)) return;
+    if (top?.merge?.(cmd)) {
+      this.onApply?.(cmd);
+      return;
+    }
     this.done.push(cmd);
     this.trim();
+    this.onApply?.(cmd);
   }
 
   undo(): boolean {
@@ -57,6 +65,7 @@ export class History {
     cmd.undo();
     this.undone.push(cmd);
     this.version++;
+    this.onApply?.(cmd);
     return true;
   }
 
@@ -66,6 +75,7 @@ export class History {
     cmd.redo();
     this.done.push(cmd);
     this.version++;
+    this.onApply?.(cmd);
     return true;
   }
 

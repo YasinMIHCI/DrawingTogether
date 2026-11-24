@@ -4,11 +4,28 @@
   import { t } from '../../lib/i18n/t.svelte';
   import Avatar from '../../components/Avatar.svelte';
   import QrCode from './QrCode.svelte';
+  import type { SharedSession } from '../../net/sharedSession';
 
-  let { room, onleave, onopen }: { room: Room; onleave: () => void; onopen?: () => void } = $props();
+  let { room, session, onleave, onopen, ondeletesave }: {
+    room: Room; session?: SharedSession; onleave: () => void; onopen?: () => void; ondeletesave?: () => void;
+  } = $props();
 
   let tick = $state(0);
-  onMount(() => room.subscribe(() => tick++));
+  onMount(() => {
+    const a = room.subscribe(() => tick++);
+    const b = session?.subscribe(() => tick++);
+    return () => (a(), b?.());
+  });
+  const saveStatus = $derived((void tick, session?.saveStatus ?? 'off'));
+  // Agrandir la toile (hôte)
+  let grow = $state({ top: 0, right: 0, bottom: 0, left: 0 });
+  const newW = $derived((void tick, room.state.settings.width) + grow.left + grow.right);
+  const newH = $derived((void tick, room.state.settings.height) + grow.top + grow.bottom);
+  const growValid = $derived(newW <= 8192 && newH <= 8192 && newW * newH <= 4096 * 4096 && newW >= 16 && newH >= 16 && (grow.top || grow.right || grow.bottom || grow.left) !== 0);
+  function applyGrow() {
+    session?.resize(newW, newH, grow.left, grow.top);
+    grow = { top: 0, right: 0, bottom: 0, left: 0 };
+  }
   const s = $derived.by(() => {
     void tick;
     return { peers: room.peers, state: room.state, isHost: room.isHost, status: room.status };
@@ -90,13 +107,39 @@
       </form>
       <p class="muted small">{t('shared.security')}</p>
     </div>
+    {#if session}
+      <div class="card">
+        <h2>{t('room.enlarge')}</h2>
+        <p class="muted small top0">{t('room.enlargeHint')}</p>
+        <div class="grow">
+          {#each ['top', 'right', 'bottom', 'left'] as const as side (side)}
+            <label>{t(`room.${side}`)}<input type="number" min="0" max="4000" step="100" bind:value={grow[side]} /></label>
+          {/each}
+        </div>
+        <div class="row">
+          <span class="muted">{t('room.newSize', { w: String(newW), h: String(newH) })}</span>
+          <button class="btn" disabled={!growValid} onclick={applyGrow}>{t('room.apply')}</button>
+        </div>
+        {#if !growValid && (newW > 8192 || newH > 8192 || newW * newH > 4096 * 4096)}<p class="muted small">{t('newdoc.tooBig')}</p>{/if}
+      </div>
+    {/if}
+  {/if}
+
+  {#if session}
+    <div class="card">
+      <p class="save" class:bad={saveStatus === 'unavailable'}>{t(`room.save.${saveStatus}`)}</p>
+      <p class="muted small top0">{t('room.saveHint')}</p>
+      {#if s.isHost && ondeletesave && saveStatus !== 'off'}
+        <button class="btn small-btn" onclick={() => confirm(t('room.deleteConfirm')) && ondeletesave?.()}>{t('room.deleteSave')}</button>
+      {/if}
+    </div>
   {/if}
 
   <div class="bottom">
     <button class="btn" onclick={onleave}>{t('shared.leave')}</button>
     <button class="btn primary" disabled={!onopen} onclick={onopen}>{t('shared.openCanvas')}</button>
   </div>
-  {#if !onopen}<p class="muted small center">{t('shared.canvasSoon')}</p>{/if}
+
 </section>
 
 <style>
@@ -129,6 +172,14 @@
   .pw input { font: inherit; color: var(--ink); padding: 9px 12px; border: 2px solid var(--line); border-radius: 12px; background: var(--surface-2); min-width: 0; }
   .muted { color: var(--ink-soft); }
   .small { font-size: 0.85rem; margin: 10px 0 0; }
-  .center { text-align: center; }
   .bottom { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .grow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }
+  .grow label { display: grid; gap: 4px; font-size: 0.85rem; color: var(--ink-soft); }
+  .grow input { font: inherit; color: var(--ink); padding: 8px; border: 2px solid var(--line); border-radius: 10px; background: var(--surface-2); min-width: 0; }
+  @media (max-width: 480px) { .grow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .row { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .save { margin: 0; font-weight: 600; color: var(--teal); }
+  .save.bad { color: #c0392b; }
+  .top0 { margin-top: 4px; }
+  .small-btn { margin-top: 10px; }
 </style>

@@ -10,10 +10,27 @@
   import type { Key } from '../lib/i18n/i18n.svelte';
   import ProfileCard from '../components/ProfileCard.svelte';
   import RoomLobby from '../ui/room/RoomLobby.svelte';
+  import RoomBar from '../ui/room/RoomBar.svelte';
+  import EditorView from '../ui/EditorView.svelte';
+  import type { Insets } from '../ui/desktop/viewport';
+  import type { FileActions } from '../ui/common/types';
+  import { Editor } from '../engine/editor';
+  import { exportImage, projectToFile, saveProject } from '../engine/project';
+  import { SharedSession } from '../net/sharedSession';
+  import { supabaseCanvasStore } from '../net/canvasStore';
+  import { appChrome } from '../lib/appChrome.svelte';
+  import { forgetRoom, recentRooms, rememberRoom, type RecentRoom } from '../lib/recentRooms';
+  import { screen, uiStyle } from '../lib/screen.svelte';
+  import { downloadBlob, pickFile, timestampedName } from '../lib/download';
 
-  type View = 'home' | 'busy' | 'room';
+  type View = 'home' | 'busy' | 'lobby' | 'canvas';
   let view = $state<View>('home');
   let room = $state.raw<Room | null>(null);
+  let editor = $state.raw<Editor | null>(null);
+  let session = $state.raw<SharedSession | null>(null);
+  let insets = $state<Insets>({ top: 0, right: 0, bottom: 0, left: 0 });
+  let recent = $state<RecentRoom[]>(recentRooms());
+  let saveText = $state('');
   let error = $state<string | null>(null);
   let code = $state(normalizeCode(router.param));
   let joinPassword = $state('');
@@ -29,11 +46,26 @@
     return { id, nickname: settings.nickname.trim().slice(0, 20), avatar: settings.avatar, joinedAt };
   }
 
-  function enter(r: Room) {
+  /** Entre dans la salle : crée la toile, lance la synchronisation (et charge la sauvegarde si on rouvre la salle). */
+  async function enter(r: Room, fresh: boolean) {
+    const st = r.state.settings;
+    const ed = new Editor({ width: st.width, height: st.height, ownerId: r.me.id, historyBytes: (screen.info.coarse ? 64 : 256) * 2 ** 20 });
+    ed.doc.background = st.background;
+    const sess = new SharedSession(r, ed, supabaseCanvasStore);
+    const saved = r.isHost && !fresh ? await supabaseCanvasStore.load(r.code).catch(() => null) : null;
+    await sess.start(saved);
+    if (r.isHost) {
+      r.updateSettings({ width: ed.doc.width, height: ed.doc.height, background: ed.doc.background });
+      sess.autosave(true);
+    }
+    sess.subscribe(() => (saveText = sess.saveStatus === 'saved' ? t('room.save.saved') : sess.saveStatus === 'saving' ? t('room.save.saving') : ''));
     room = r;
-    view = 'room';
+    editor = ed;
+    session = sess;
+    view = 'canvas';
     error = null;
     remember();
+    rememberRoom({ code: r.code, at: Date.now(), width: st.width, height: st.height });
     history.replaceState(null, '', `#/shared/${r.code}`);
     r.subscribe(() => {
       if (r.status === 'kicked') {
@@ -49,8 +81,15 @@
   }
 
   function exit() {
+    if (session) {
+      session.autosave();
+      session.dispose();
+    }
+    session = null;
+    editor = null;
     room?.leave();
     room = null;
+    recent = recentRooms();
     saveRoomSession(null);
     view = 'home';
     history.replaceState(null, '', '#/shared');
@@ -68,7 +107,7 @@
       const r = await Room.create(supabaseTransport, generateCode(), me(), s);
       if (createPassword) await r.setPassword(createPassword);
       createPassword = '';
-      enter(r);
+      await enter(r, true);
     } catch {
       view = 'home';
       error = errorText('network');
@@ -82,7 +121,7 @@
     view = 'busy';
     error = null;
     try {
-      enter(await Room.join(supabaseTransport, c, me(id, joinedAt), joinPassword || null));
+      await enter(await Room.join(supabaseTransport, c, me(id, joinedAt), joinPassword || null), false);
       joinPassword = '';
       needPassword = false;
     } catch (e) {
@@ -100,13 +139,13 @@
       code = saved.code;
       view = 'busy';
       try {
-        enter(await Room.join(supabaseTransport, saved.code, me(saved.id, saved.joinedAt), null));
+        await enter(await Room.join(supabaseTransport, saved.code, me(saved.id, saved.joinedAt), null), false);
         return;
       } catch (e) {
         // L'hôte était seul : la salle a disparu avec lui, on la recrée avec le même code.
         if (e instanceof JoinError && e.reason === 'notFound' && saved.wasHost) {
           try {
-            enter(await Room.create(supabaseTransport, saved.code, me(saved.id, saved.joinedAt), saved.settings));
+            await enter(await Room.create(supabaseTransport, saved.code, me(saved.id, saved.joinedAt), saved.settings), false);
             return;
           } catch {
             /* on retombe sur l'accueil */
@@ -121,9 +160,82 @@
     }
   });
 
-  onDestroy(() => room?.leave());
+  /** Rouvre une salle récente : on la rejoint si elle est ouverte, sinon on la recrée depuis sa sauvegarde. */
+  async function reopen(r: RecentRoom) {
+    if (!hasNickname) return (error = t('shared.needNickname'));
+    view = 'busy';
+    error = null;
+    try {
+      await enter(await Room.join(supabaseTransport, r.code, me(), null), false);
+    } catch (e) {
+      const reason = e instanceof JoinError ? e.reason : 'network';
+      if (reason !== 'notFound') {
+        view = 'home';
+        error = errorText(reason);
+        return;
+      }
+      try {
+        const s: RoomSettings = { width: r.width, height: r.height, background: '#ffffff', locked: false, passwordHash: null };
+        await enter(await Room.create(supabaseTransport, r.code, me(), s), false);
+      } catch {
+        view = 'home';
+        error = errorText('network');
+      }
+    }
+  }
+
+  const files: FileActions = {
+    disabled: ['newDoc', 'open'],
+    newDoc() {},
+    open() {},
+    async save() {
+      if (editor) downloadBlob(await projectToFile(await saveProject(editor.doc)), timestampedName('toile', '.dtproj'));
+    },
+    async importImage() {
+      const f = await pickFile('image/*');
+      if (f && editor) {
+        const bmp = await createImageBitmap(f);
+        editor.importImage(bmp, bmp.width, bmp.height);
+      }
+    },
+    async exportImage(type) {
+      if (editor) downloadBlob(await exportImage(editor.doc, type), timestampedName('toile', type === 'png' ? '.png' : '.jpg'));
+    },
+  };
+
+  function onPaste(e: ClipboardEvent) {
+    if (view !== 'canvas' || !editor) return;
+    const target = e.target as HTMLElement | null;
+    if (target && /^(INPUT|TEXTAREA)$/.test(target.tagName)) return;
+    const file = [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith('image/'));
+    e.preventDefault();
+    if (file) createImageBitmap(file).then((b) => editor?.importImage(b, b.width, b.height));
+    else editor.paste();
+  }
+
+  $effect(() => {
+    appChrome.fullscreen = view === 'canvas';
+  });
+
+  onDestroy(() => {
+    appChrome.fullscreen = false;
+    exit();
+  });
 </script>
 
+<svelte:window onpaste={onPaste} />
+
+{#if view === 'canvas' && editor && session && room}
+  <div class="draw">
+    {#key editor}
+      <EditorView {editor} {files} status={saveText} bind:insets />
+    {/key}
+    <div class="roombar" style:top="{insets.top + (uiStyle() === 'mobile' ? 62 : 8)}px" style:left="{insets.left}px" style:right="{insets.right}px">
+      <RoomBar {session} {editor} onlobby={() => (view = 'lobby')} />
+    </div>
+    {#if error}<p class="error floating" role="alert">{error}</p>{/if}
+  </div>
+{:else}
 <main>
   <h1>{t('shared.title')}</h1>
 
@@ -131,8 +243,9 @@
 
   {#if view === 'busy'}
     <p class="busy" role="status">{t('shared.connecting')}</p>
-  {:else if view === 'room' && room}
-    <RoomLobby {room} onleave={exit} />
+  {:else if view === 'lobby' && room}
+    <RoomLobby {room} session={session ?? undefined} onleave={exit} onopen={() => (view = 'canvas')}
+      ondeletesave={() => supabaseCanvasStore.remove(room!.code).then(() => (error = t('room.deleted'))).catch(() => {})} />
   {:else}
     <p class="intro">{t('shared.intro')}</p>
     {#if !hasNickname}<ProfileCard />{/if}
@@ -168,8 +281,26 @@
         <button class="btn primary" disabled={!hasNickname}>{t('shared.create')}</button>
       </form>
     </div>
+    {#if recent.length}
+      <section class="card">
+        <h2>{t('room.recent')}</h2>
+        <p class="muted">{t('room.recentHint')}</p>
+        <ul class="recent">
+          {#each recent as r (r.code)}
+            <li>
+              <span class="rc">{r.code}</span>
+              <span class="muted">{r.width} × {r.height} · {new Date(r.at).toLocaleDateString()}</span>
+              <span class="grow"></span>
+              <button class="btn small" onclick={() => reopen(r)} disabled={!hasNickname}>{t('room.reopen')}</button>
+              <button class="btn small ghost" onclick={() => (forgetRoom(r.code), (recent = recentRooms()))}>{t('room.forget')}</button>
+            </li>
+          {/each}
+        </ul>
+      </section>
+    {/if}
   {/if}
 </main>
+{/if}
 
 <style>
   main { max-width: 860px; margin: 0 auto; padding: 8px 16px 40px; display: grid; gap: 14px; }
@@ -192,4 +323,14 @@
   .btn { font: inherit; min-height: 44px; border-radius: 12px; border: 2px solid var(--line); cursor: pointer; }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
   .btn:disabled { opacity: 0.45; cursor: default; }
+  .btn.small { min-height: 36px; padding: 0 12px; background: var(--surface-2); }
+  .btn.ghost { background: none; }
+  .recent { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .recent li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid var(--line); }
+  .rc { font-weight: 800; letter-spacing: 0.12em; }
+  .grow { flex: 1; }
+  .draw { position: fixed; inset: 0; overflow: hidden; }
+  .roombar { position: absolute; display: flex; justify-content: center; pointer-events: none; z-index: 6; }
+  .roombar > :global(*) { pointer-events: auto; }
+  .floating { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); z-index: 7; }
 </style>

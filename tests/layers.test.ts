@@ -55,3 +55,13 @@ describe('layers', () => {
     expect(compositeOp('multiply')).toBe('multiply');
   });
 });
+
+describe('document resize', () => {
+  it('changes size and keeps layers', () => {
+    const doc = new DrawingDocument(10, 10);
+    doc.resize(30, 20, 5, 5);
+    expect(doc.width).toBe(30);
+    expect(doc.layers[0].surface.canvas.width).toBe(30);
+    expect(doc.layers[0].surface.canvas.height).toBe(20);
+  });
+});

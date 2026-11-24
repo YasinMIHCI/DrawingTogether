@@ -5,4 +5,6 @@ export interface FileActions {
   save(): void;
   importImage(): void;
   exportImage(type: 'png' | 'jpeg'): void;
+  /** Actions indisponibles ici (ex. dans une toile partagée : nouveau dessin, ouvrir un projet). */
+  disabled?: ('newDoc' | 'open' | 'importImage' | 'save')[];
 }

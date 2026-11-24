@@ -6,12 +6,7 @@
   import { dbGet, dbSet } from '../lib/db';
   import { downloadBlob, pickFile, timestampedName } from '../lib/download';
   import { t } from '../lib/i18n/t.svelte';
-  import MobileUI from '../ui/mobile/MobileUI.svelte';
-  import KritaUI from '../ui/desktop/KritaUI.svelte';
-  import PaintUI from '../ui/desktop/PaintUI.svelte';
-  import type { Insets } from '../ui/desktop/viewport';
-  import { uiStyle } from '../lib/screen.svelte';
-  import { isDark } from '../lib/theme.svelte';
+  import EditorView from '../ui/EditorView.svelte';
   import NewDocDialog from '../ui/common/NewDocDialog.svelte';
   import type { FileActions } from '../ui/common/types';
 
@@ -19,24 +14,6 @@
   const touch = screen.info.coarse;
 
   let editor = $state.raw<Editor | null>(null);
-  // Zone de la toile entre les panneaux (interfaces bureau) ; 0 partout = plein écran
-  let insets = $state<Insets>({ top: 0, right: 0, bottom: 0, left: 0 });
-  let fittedFor: Editor | null = null;
-  function setViewport(r: Insets | null) {
-    insets = r ?? { top: 0, right: 0, bottom: 0, left: 0 };
-    if (r && editor && fittedFor !== editor) {
-      // Première mise en page de ce dessin : on ajuste la vue une fois la toile redimensionnée
-      fittedFor = editor;
-      const ed = editor;
-      requestAnimationFrame(() => requestAnimationFrame(() => ed.fit()));
-    }
-  }
-  const ui = $derived(uiStyle());
-
-  // Couleur autour de la toile selon le thème
-  $effect(() => {
-    editor?.setWorkspaceColor(isDark() ? (ui === 'mobile' ? '#1b1c20' : '#3a3b40') : ui === 'paint' ? '#dde3ea' : ui === 'mobile' ? '#c9cacd' : '#a9abb1');
-  });
   let showNew = $state(false);
   let status = $state('');
 
@@ -156,10 +133,6 @@
     else if (file.type.startsWith('image/')) importImageFile(file);
   }
 
-  function attachEditor(node: HTMLCanvasElement, ed: Editor) {
-    const detach = ed.attach(node);
-    return { destroy: detach };
-  }
 </script>
 
 <svelte:window onpaste={onPaste} />
@@ -167,16 +140,7 @@
 <div class="draw" role="application" ondragover={(e) => e.preventDefault()} ondrop={onDrop}>
   {#if editor}
     {#key editor}
-      <canvas class="canvas-surface" use:attachEditor={editor}
-        style:top="{insets.top}px" style:left="{insets.left}px"
-        style:width="calc(100% - {insets.left + insets.right}px)" style:height="calc(100% - {insets.top + insets.bottom}px)"></canvas>
-      {#if ui === 'krita'}
-        <KritaUI {editor} {files} {status} {setViewport} />
-      {:else if ui === 'paint'}
-        <PaintUI {editor} {files} {status} {setViewport} />
-      {:else}
-        <MobileUI {editor} {files} {status} />
-      {/if}
+      <EditorView {editor} {files} {status} />
     {/key}
   {/if}
   {#if showNew}
@@ -186,5 +150,4 @@
 
 <style>
   .draw { position: fixed; inset: 0; overflow: hidden; }
-  canvas { position: absolute; display: block; }
 </style>

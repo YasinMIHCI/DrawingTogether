@@ -38,15 +38,16 @@ const ROT = Math.PI / 12;
 
 export function createCommands(editor: Editor, files: FileActions, ui: UiHooks): Record<string, Command> {
   const e = editor;
+  const off = (k: NonNullable<FileActions['disabled']>[number]) => files.disabled?.includes(k) ?? false;
   const tool = (id: ToolId, label: Key, key: string, icon: IconName): Command => ({
     id: `tool.${id}`, label, keys: [key], icon, run: () => e.setTool(id), checked: () => e.tool === id,
   });
   const list: Command[] = [
     // Fichier
-    { id: 'file.new', label: 'file.new', keys: ['Mod+Alt+N'], icon: 'newDoc', run: () => files.newDoc() },
-    { id: 'file.open', label: 'file.open', keys: ['Mod+O'], icon: 'open', run: () => files.open() },
-    { id: 'file.save', label: 'file.save', keys: ['Mod+S'], icon: 'save', run: () => files.save() },
-    { id: 'file.import', label: 'file.import', keys: ['Mod+Shift+O'], icon: 'import', run: () => files.importImage() },
+    { id: 'file.new', label: 'file.new', keys: ['Mod+Alt+N'], icon: 'newDoc', run: () => files.newDoc(), enabled: () => !off('newDoc') },
+    { id: 'file.open', label: 'file.open', keys: ['Mod+O'], icon: 'open', run: () => files.open(), enabled: () => !off('open') },
+    { id: 'file.save', label: 'file.save', keys: ['Mod+S'], icon: 'save', run: () => files.save(), enabled: () => !off('save') },
+    { id: 'file.import', label: 'file.import', keys: ['Mod+Shift+O'], icon: 'import', run: () => files.importImage(), enabled: () => !off('importImage') },
     { id: 'file.exportPng', label: 'file.exportPng', keys: ['Mod+Shift+E'], icon: 'export', run: () => files.exportImage('png') },
     { id: 'file.exportJpg', label: 'file.exportJpg', icon: 'export', run: () => files.exportImage('jpeg') },
     { id: 'file.home', label: 'm.home', icon: 'home', run: () => navigate('home') },

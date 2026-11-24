@@ -6,11 +6,12 @@
   import type { IconName } from '../common/icons';
 
   let { files, onclose }: { files: FileActions; onclose: () => void } = $props();
-  const items: { icon: IconName; label: Key; run: () => void }[] = [
-    { icon: 'newDoc', label: 'file.new', run: () => files.newDoc() },
-    { icon: 'open', label: 'file.open', run: () => files.open() },
-    { icon: 'save', label: 'file.save', run: () => files.save() },
-    { icon: 'import', label: 'file.import', run: () => files.importImage() },
+  const off = (k: NonNullable<FileActions['disabled']>[number]) => files.disabled?.includes(k) ?? false;
+  const items: { icon: IconName; label: Key; run: () => void; off?: boolean }[] = [
+    { icon: 'newDoc', label: 'file.new', run: () => files.newDoc(), off: off('newDoc') },
+    { icon: 'open', label: 'file.open', run: () => files.open(), off: off('open') },
+    { icon: 'save', label: 'file.save', run: () => files.save(), off: off('save') },
+    { icon: 'import', label: 'file.import', run: () => files.importImage(), off: off('importImage') },
     { icon: 'export', label: 'file.exportPng', run: () => files.exportImage('png') },
     { icon: 'export', label: 'file.exportJpg', run: () => files.exportImage('jpeg') },
   ];
@@ -19,7 +20,7 @@
 <div class="file">
   <div class="grid">
     {#each items as it (it.label)}
-      <button onclick={() => (onclose(), it.run())}><Icon name={it.icon} size={28} /><span>{t(it.label)}</span></button>
+      <button disabled={it.off} onclick={() => (onclose(), it.run())}><Icon name={it.icon} size={28} /><span>{t(it.label)}</span></button>
     {/each}
   </div>
   <p class="m-hint">{t('file.autosave')}</p>

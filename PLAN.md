@@ -114,12 +114,12 @@ L'utilisateur bascule entre « Style Krita » et « Style Paint » dans les rég
 - ✅ **T4.5** Reconnexion après coupure, gestion du départ de l'hôte.
 
 ### Phase 5 — Toile partagée
-- **T5.1** Grande toile synchronisée, curseurs des autres joueurs avec leur pseudo.
-- **T5.1b** Taille de cadre modulable : l'hôte choisit la taille à la création (préréglages, ex. 4000×3000 par défaut pour 8 joueurs) et peut l'agrandir en cours de partie (ajout de place sur les bords) ; les joueurs naviguent librement (zoom/déplacement + mini-carte).
-- **T5.2** Calques partagés ou calque par joueur ❓(Q10).
-- **T5.3** Arrivée en cours de partie (rattrapage de l'état).
-- **T5.4** Export de la toile ; sauvegarde/persistance ❓(Q10).
-- **T5.5** Chat simple (optionnel).
+- ✅ **T5.1** Grande toile synchronisée, curseurs des autres joueurs avec leur pseudo.
+- ✅ **T5.1b** Taille de cadre modulable : l'hôte choisit la taille à la création (préréglages, ex. 4000×3000 par défaut pour 8 joueurs) et peut l'agrandir en cours de partie (ajout de place sur les bords) ; les joueurs naviguent librement (zoom/déplacement + mini-carte).
+- ✅ **T5.2** Un calque par joueur (décision) : chacun ne dessine que sur le sien, « annuler » n'agit que sur ses propres traits.
+- ✅ **T5.3** Arrivée en cours de partie (rattrapage de l'état).
+- ✅ **T5.4** Export de la toile ; sauvegarde en ligne (Supabase Storage) par l'hôte toutes les 15 s, une seule sauvegarde par salle (remplacée à chaque fois) ; salles récentes à rouvrir. Nécessite `supabase/setup.sql`.
+- ✅ **T5.5** Discussion (chat) dans la salle.
 
 ### Phase 6 — Jeux de téléphone dessiné
 - **T6.1** Moteur de partie générique : « chaînes » qui tournent entre joueurs, étapes (écrire / dessiner / regarder), minuteur, attribution sans répétition, gestion des absents.

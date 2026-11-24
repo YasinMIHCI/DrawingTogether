@@ -17,6 +17,9 @@ export class PixelPatch implements Command {
   undo(): void {
     this.layer.surface.ctx.putImageData(this.before, this.rect.x, this.rect.y);
   }
+  affected() {
+    return [{ layer: this.layer, rect: this.rect }];
+  }
   redo(): void {
     this.layer.surface.ctx.putImageData(this.after, this.rect.x, this.rect.y);
   }
@@ -154,5 +157,8 @@ export class CompoundCommand implements Command {
   }
   redo(): void {
     for (const c of this.parts) c.redo();
+  }
+  affected() {
+    return this.parts.flatMap((c) => c.affected?.() ?? []);
   }
 }

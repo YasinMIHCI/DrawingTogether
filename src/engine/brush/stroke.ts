@@ -28,8 +28,8 @@ const DEG = Math.PI / 180;
  * - Étaler / flouter : chaque tampon modifie directement le calque.
  */
 export class StrokeRenderer {
-  private buffer: Surface;
-  private snapshot: Surface;
+  private _buffer: Surface | null = null;
+  private _snapshot: Surface | null = null;
   private layer: Layer | null = null;
   private s: BrushSettings | null = null;
   private color = '#000000';
@@ -48,9 +48,14 @@ export class StrokeRenderer {
   private clipTmp = new TempSurface();
   private selection: HTMLCanvasElement | null = null;
 
-  constructor(private readonly width: number, private readonly height: number) {
-    this.buffer = createSurface(width, height);
-    this.snapshot = createSurface(width, height);
+  constructor(private readonly width: number, private readonly height: number) {}
+
+  // Créés à la première utilisation : une grande toile partagée ne coûte pas de mémoire inutile.
+  private get buffer(): Surface {
+    return (this._buffer ??= createSurface(this.width, this.height));
+  }
+  private get snapshot(): Surface {
+    return (this._snapshot ??= createSurface(this.width, this.height));
   }
 
   get active(): boolean {

@@ -8,6 +8,7 @@
   import { router } from './lib/router.svelte';
   import { settings } from './lib/settings.svelte';
   import { uiStyle } from './lib/screen.svelte';
+  import { appChrome } from './lib/appChrome.svelte';
 
   $effect(() => {
     document.documentElement.lang = settings.locale;
@@ -17,7 +18,7 @@
   });
 </script>
 
-{#if router.route !== 'draw'}<TopBar />{/if}
+{#if router.route !== 'draw' && !appChrome.fullscreen}<TopBar />{/if}
 {#if router.route === 'draw'}
   <Draw />
 {:else if router.route === 'shared'}

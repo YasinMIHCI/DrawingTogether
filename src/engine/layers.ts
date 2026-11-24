@@ -24,11 +24,20 @@ export class Layer {
   opacity = 1;
   blend: BlendMode = 'normal';
   locked = false;
-  readonly surface: Surface;
+  /** Toile partagée : identifiant du joueur à qui appartient le calque (null = calque local). */
+  owner: string | null = null;
+  surface: Surface;
 
   constructor(width: number, height: number, number: number) {
     this.number = number;
     this.surface = createSurface(width, height);
+  }
+
+  /** Nouvelle taille ; le contenu est décalé de (dx, dy). */
+  resize(width: number, height: number, dx: number, dy: number): void {
+    const next = createSurface(width, height);
+    next.ctx.drawImage(this.surface.canvas, dx, dy);
+    this.surface = next;
   }
 }
 
@@ -42,7 +51,7 @@ export class DrawingDocument {
   background: string | null = '#ffffff';
   private counter = 0;
 
-  constructor(readonly width: number, readonly height: number) {
+  constructor(public width: number, public height: number) {
     const first = this.createLayer();
     this.layers.push(first);
     this.activeId = first.id;
@@ -77,6 +86,13 @@ export class DrawingDocument {
       this.activeId = this.layers[Math.max(0, index - 1)].id;
     }
     return { layer, index };
+  }
+
+  /** Agrandit / rétrécit la toile ; le contenu est décalé de (dx, dy). */
+  resize(width: number, height: number, dx: number, dy: number): void {
+    for (const l of this.layers) l.resize(width, height, dx, dy);
+    this.width = width;
+    this.height = height;
   }
 
   /** Remplace tous les calques (chargement d'un projet). */

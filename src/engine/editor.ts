@@ -23,7 +23,7 @@ import { applyFilter as runFilter, defaultParams, type FilterKind } from './tool
 import { loadProject, type ProjectData } from './project';
 
 export type ToolId = 'brush' | 'eraser' | 'fill' | 'eyedropper' | 'shape' | 'text' | 'select' | 'transform' | 'liquify';
-export type Notice = 'layerLocked' | 'layerHidden' | 'transformEmpty' | null;
+export type Notice = 'layerLocked' | 'layerHidden' | 'transformEmpty' | 'notYourLayer' | 'sharedLayers' | null;
 
 export interface FillOptions {
   /** 0 à 255 */
@@ -54,6 +54,8 @@ export interface EditorOptions {
   /** Mémoire max de l'historique (octets). */
   historyBytes?: number;
   historySteps?: number;
+  /** Toile partagée : identifiant du joueur local */
+  ownerId?: string;
 }
 
 /** Distance (px écran) sous laquelle un clic ferme le polygone sur son premier point. */
@@ -76,9 +78,16 @@ export class Editor {
   textRequest: Point | null = null;
   selectOpts: SelectOptions = { kind: 'rect', mode: 'replace', tolerance: 32, source: 'layer' };
   liquifyOpts: LiquifyOptions = { mode: 'push', size: 80, strength: 0.6 };
-  readonly selection: Selection;
-  readonly transform: TransformController;
+  selection: Selection;
+  transform: TransformController;
   notice: Notice = null;
+  /**
+   * Toile partagée : identifiant du joueur local. On ne peut dessiner que sur son calque,
+   * et la pile de calques (ajout, suppression, ordre…) est gérée par la salle.
+   */
+  readonly ownerId: string | null;
+  /** Dessin supplémentaire par-dessus la toile (curseurs et traits des autres joueurs). */
+  externalOverlay: ((ctx: CanvasRenderingContext2D, view: ViewTransform) => void) | null = null;
 
   private stroke: StrokeRenderer;
   private live: LiveEdit;
@@ -106,11 +115,17 @@ export class Editor {
   private raf = 0;
   private listeners = new Set<() => void>();
   private hoverListeners = new Set<() => void>();
+  private pixelListeners = new Set<(layer: Layer, rect: { x: number; y: number; w: number; h: number }) => void>();
+  private strokeListeners = new Set<(p: InputPoint | null, brush: BrushSettings) => void>();
   private fitted = false;
 
   constructor(opts: EditorOptions) {
     this.doc = new DrawingDocument(opts.width, opts.height);
     this.history = new History({ maxBytes: opts.historyBytes ?? 256 * 2 ** 20, maxSteps: opts.historySteps ?? 200 });
+    this.ownerId = opts.ownerId ?? null;
+    this.history.onApply = (cmd) => {
+      for (const a of cmd.affected?.() ?? []) for (const fn of this.pixelListeners) fn(a.layer, a.rect);
+    };
     this.stroke = new StrokeRenderer(opts.width, opts.height);
     this.live = new LiveEdit(opts.width, opts.height);
     this.selection = new Selection(opts.width, opts.height);
@@ -127,6 +142,70 @@ export class Editor {
   private changed(): void {
     this.requestRender();
     for (const fn of this.listeners) fn();
+  }
+
+  /** Pixels d'un calque modifiés par une action terminée (trait, remplissage, annulation…). */
+  subscribePixels(fn: (layer: Layer, rect: { x: number; y: number; w: number; h: number }) => void): () => void {
+    this.pixelListeners.add(fn);
+    return () => this.pixelListeners.delete(fn);
+  }
+
+  /** Points du trait en cours (document) pendant qu'on dessine ; null = fin du trait. */
+  subscribeStroke(fn: (p: InputPoint | null, brush: BrushSettings) => void): () => void {
+    this.strokeListeners.add(fn);
+    return () => this.strokeListeners.delete(fn);
+  }
+
+  private emitStroke(p: InputPoint | null): void {
+    const b = this.activeBrush;
+    if (b) for (const fn of this.strokeListeners) fn(p, b);
+  }
+
+  /**
+   * Change la taille de la toile (ajout de place sur les bords) : le contenu est décalé de (dx, dy).
+   * L'historique est vidé (les anciennes positions ne sont plus valables).
+   */
+  resizeDocument(width: number, height: number, dx: number, dy: number): void {
+    this.finishTransform(false);
+    this.finishPolygon(false);
+    this.cancelFilter();
+    if (this.stroke.active) this.stroke.cancel();
+    const anchor = this.view.toScreen({ x: 0, y: 0 });
+    this.doc.resize(width, height, dx, dy);
+    this.stroke = new StrokeRenderer(width, height);
+    this.live = new LiveEdit(width, height);
+    this.selection = new Selection(width, height);
+    this.transform = new TransformController(width, height);
+    this.liquifyStroke = new LiquifyStroke(width, height);
+    this.temp = null;
+    this.selPath = null;
+    this.history.clear();
+    this.history.version++;
+    // Le dessin reste au même endroit à l'écran
+    this.view.anchor({ x: dx, y: dy }, anchor);
+    this.changed();
+  }
+
+  /** Mode partagé : la pile de calques n'est pas modifiable localement. */
+  get sharedLayers(): boolean {
+    return this.ownerId !== null;
+  }
+
+  private refuseStructure(): boolean {
+    if (!this.sharedLayers) return false;
+    this.notice = 'sharedLayers';
+    this.changed();
+    return true;
+  }
+
+  /** Applique des pixels reçus d'un autre joueur sur son calque (hors historique local). */
+  applyRemotePixels(layer: Layer, x: number, y: number, img: CanvasImageSource, w: number, h: number): void {
+    const ctx = layer.surface.ctx;
+    ctx.save();
+    ctx.clearRect(x, y, w, h);
+    ctx.drawImage(img, x, y);
+    ctx.restore();
+    this.changed();
   }
 
   /** Abonnement aux déplacements du pointeur (barre d'état). */
@@ -298,7 +377,8 @@ export class Editor {
   /** Vérifie que le calque actif accepte le dessin ; sinon affiche un message. */
   private editableLayer(): Layer | null {
     const layer = this.doc.active;
-    const notice: Notice = layer.locked ? 'layerLocked' : !layer.visible ? 'layerHidden' : null;
+    const notice: Notice =
+      this.ownerId && layer.owner !== this.ownerId ? 'notYourLayer' : layer.locked ? 'layerLocked' : !layer.visible ? 'layerHidden' : null;
     if (notice !== this.notice) {
       this.notice = notice;
       this.changed();
@@ -314,6 +394,7 @@ export class Editor {
         const layer = this.editableLayer();
         if (!layer) return false;
         this.stroke.begin(layer, this.activeBrush!, this.color, p, pointerType !== 'pen', this.selection.canvas);
+        this.emitStroke(p);
         this.requestRender();
         return true;
       }
@@ -378,7 +459,11 @@ export class Editor {
     switch (this.tool) {
       case 'brush':
       case 'eraser':
-        this.stroke.add(points.map((p) => this.toDocPoint(p)));
+        {
+          const pts = points.map((p) => this.toDocPoint(p));
+          this.stroke.add(pts);
+          for (const p of pts) this.emitStroke(p);
+        }
         this.requestRender();
         break;
       case 'eyedropper':
@@ -419,6 +504,7 @@ export class Editor {
       case 'brush':
       case 'eraser': {
         const cmd = this.stroke.end();
+        this.emitStroke(null);
         if (cmd) this.history.push(cmd);
         this.changed();
         break;
@@ -443,7 +529,10 @@ export class Editor {
   }
 
   private pointerCancel(): void {
-    if (this.stroke.active) this.stroke.cancel();
+    if (this.stroke.active) {
+      this.stroke.cancel();
+      this.emitStroke(null);
+    }
     if (this.liquifyStroke.active) this.liquifyStroke.cancel();
     this.selectDraft = null;
     this.transform.pointerUp();
@@ -806,8 +895,21 @@ export class Editor {
     this.finishTransform(true);
     this.finishPolygon(true);
     if (this.selection.active) this.setSelection(null);
-    const layer = this.addLayer();
-    layer.surface.ctx.drawImage(src, x, y);
+    if (this.sharedLayers) {
+      // Toile partagée : pas de nouveau calque, l'image arrive sur son propre calque, sélectionnée pour être placée.
+      const own = this.doc.layers.find((l) => l.owner === this.ownerId);
+      if (!own) return;
+      this.doc.activeId = own.id;
+      const mask = rasterMask(this.doc.width, this.doc.height, (ctx) => ctx.drawImage(src, x, y));
+      const before = own.surface.ctx.getImageData(0, 0, this.doc.width, this.doc.height);
+      own.surface.ctx.drawImage(src, x, y);
+      const after = own.surface.ctx.getImageData(0, 0, this.doc.width, this.doc.height);
+      this.pushCommand(new PixelPatch('paste', own, { x: 0, y: 0, w: this.doc.width, h: this.doc.height }, before, after));
+      this.selection.set(mask);
+    } else {
+      const layer = this.addLayer();
+      layer.surface.ctx.drawImage(src, x, y);
+    }
     this.tool = 'transform';
     this.startTransform();
     this.changed();
@@ -970,6 +1072,11 @@ export class Editor {
     }
     ctx.restore();
     this.transform.drawOverlay(ctx, this.view);
+    if (this.externalOverlay) {
+      ctx.save();
+      this.externalOverlay(ctx, this.view);
+      ctx.restore();
+    }
     if (this.pickAt) {
       // Anneau de la pipette, au-dessus du doigt pour rester visible
       const { x, y } = this.pickAt;
@@ -1011,7 +1118,13 @@ export class Editor {
   // ---------- Calques ----------
 
   setActiveLayer(id: number): void {
-    if (this.doc.get(id)) {
+    const target = this.doc.get(id);
+    if (target && this.ownerId && target.owner !== this.ownerId) {
+      this.notice = 'notYourLayer';
+      this.changed();
+      return;
+    }
+    if (target) {
       this.finishPolygon(true);
       this.finishTransform(true);
       this.doc.activeId = id;
@@ -1020,6 +1133,7 @@ export class Editor {
   }
 
   addLayer(): Layer {
+    if (this.refuseStructure()) return this.doc.active;
     const layer = this.doc.createLayer();
     const index = this.doc.indexOf(this.doc.activeId) + 1;
     this.exec(new AddLayer(this.doc, layer, index, this.doc.activeId));
@@ -1027,6 +1141,7 @@ export class Editor {
   }
 
   duplicateLayer(id = this.doc.activeId): void {
+    if (this.refuseStructure()) return;
     const src = this.doc.get(id);
     if (!src) return;
     const copy = this.doc.createLayer();
@@ -1036,6 +1151,7 @@ export class Editor {
   }
 
   removeLayer(id = this.doc.activeId): void {
+    if (this.refuseStructure()) return;
     const layer = this.doc.get(id);
     if (!layer || this.doc.layers.length <= 1) return;
     this.exec(new RemoveLayer(this.doc, layer));
@@ -1043,6 +1159,7 @@ export class Editor {
 
   /** Déplace un calque d'un cran vers le haut (+1) ou le bas (-1). */
   moveLayer(id: number, dir: 1 | -1): void {
+    if (this.refuseStructure()) return;
     const from = this.doc.indexOf(id);
     const to = from + dir;
     if (from < 0 || to < 0 || to >= this.doc.layers.length) return;
@@ -1051,6 +1168,7 @@ export class Editor {
 
   /** Déplace un calque à une position donnée (index 0 = en bas). */
   moveLayerTo(id: number, to: number): void {
+    if (this.refuseStructure()) return;
     const from = this.doc.indexOf(id);
     to = Math.max(0, Math.min(this.doc.layers.length - 1, to));
     if (from < 0 || from === to) return;
@@ -1058,6 +1176,7 @@ export class Editor {
   }
 
   mergeDown(id = this.doc.activeId): void {
+    if (this.refuseStructure()) return;
     const index = this.doc.indexOf(id);
     if (index <= 0) return;
     this.exec(new MergeDown(this.doc, this.doc.layers[index], this.doc.layers[index - 1]));
