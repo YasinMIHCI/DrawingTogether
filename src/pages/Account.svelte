@@ -55,7 +55,10 @@
     if (tab === 'signin') run(() => signIn(username, password));
     else if (tab === 'signup') {
       if (password !== password2) return (error = t('acc.mismatch'));
-      run(() => signUp(username, password, question, answer));
+      run(async () => {
+        await signUp(username, password, question, answer);
+        location.hash = '#/bouille/new';
+      });
     } else if (!forgotQuestion) {
       run(async () => {
         forgotQuestion = await recoveryQuestion(username);

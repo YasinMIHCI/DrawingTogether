@@ -8,6 +8,8 @@ export interface Profile {
   display_name: string;
   bio: string;
   avatar_url: string | null;
+  /** Bouille enregistrée avec le compte (null si aucune, ou si social-2.sql n'est pas installé) */
+  bouille?: unknown;
 }
 
 export type AuthError =
@@ -65,9 +67,15 @@ async function attach(): Promise<void> {
 export async function loadProfile(): Promise<void> {
   if (!auth.userId) return;
   const sb = await getSupabase();
-  const { data } = await sb.from('profiles').select('id, username, display_name, bio, avatar_url').eq('id', auth.userId).single();
+  const cols = 'id, username, display_name, bio, avatar_url';
+  let { data, error } = await sb.from('profiles').select(`${cols}, bouille`).eq('id', auth.userId).single();
+  // Colonne « bouille » absente tant que social-2.sql n'est pas lancé
+  if (error) ({ data, error } = await sb.from('profiles').select(cols).eq('id', auth.userId).single());
   if (data) {
     auth.profile = data as Profile;
+    const remote = (data as Profile).bouille;
+    if (remote) settings.bouille = JSON.stringify(remote);
+    else if (settings.bouille && 'bouille' in data) void saveBouilleJson(settings.bouille);
     // Le pseudo et l'avatar du compte servent aussi dans les salles et les jeux
     settings.nickname = (data.display_name || data.username).slice(0, 20);
     settings.avatarUrl = data.avatar_url;
@@ -189,4 +197,17 @@ export async function removeAvatar(): Promise<void> {
   await sb.storage.from('avatars').remove([`${auth.userId}/avatar.png`]);
   await sb.from('profiles').update({ avatar_url: null }).eq('id', auth.userId);
   await loadProfile();
+}
+
+async function saveBouilleJson(json: string): Promise<void> {
+  if (!auth.userId) return;
+  const sb = await getSupabase();
+  await sb.from('profiles').update({ bouille: JSON.parse(json) }).eq('id', auth.userId);
+}
+
+/** Enregistre la Bouille avec le compte et en fait l'avatar (image PNG). */
+export async function saveBouille(json: string, png: Blob): Promise<void> {
+  if (!auth.userId) return;
+  await uploadAvatar(png);
+  await saveBouilleJson(json).catch(() => {});
 }

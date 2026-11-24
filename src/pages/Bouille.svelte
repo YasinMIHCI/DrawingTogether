@@ -10,13 +10,16 @@
   import { href } from '../lib/router.svelte';
   import { t } from '../lib/i18n/t.svelte';
   import type { Key } from '../lib/i18n/i18n.svelte';
-  import { auth, uploadAvatar } from '../social/auth.svelte';
+  import { auth, saveBouille } from '../social/auth.svelte';
+  import { router } from '../lib/router.svelte';
 
   /** Créateur de Bouille : aperçu à gauche, parties et réglages à droite. */
   const CATS: Category[] = ['face', 'hair', 'brows', 'eyes', 'nose', 'mouth', 'beard', 'must', 'glasses', 'mark', 'body'];
   const OPTIONAL = new Set<Category>(['beard', 'must', 'glasses', 'mark']);
 
-  let b = $state<BouilleData>(parseBouille(settings.bouille) ?? defaultBouille());
+  // #/bouille/new : juste après l'inscription, on part d'une Bouille au hasard
+  const welcome = router.param === 'new';
+  let b = $state<BouilleData>((!welcome && parseBouille(settings.bouille)) || (welcome ? randomBouille() : defaultBouille()));
   let saved = settings.bouille ?? stringifyBouille(defaultBouille());
   let past = $state<string[]>([]);
   let future = $state<string[]>([]);
@@ -85,7 +88,7 @@
     settings.bouille = stringifyBouille(b);
     if (auth.userId) {
       try {
-        await uploadAvatar(await bouillePng(b, 256, '#f4efe2'));
+        await saveBouille(settings.bouille, await bouillePng(b, 256, '#f4efe2'));
       } catch {
         error = t('bou.saveError');
         busy = false;
@@ -132,6 +135,7 @@
     <button class="reset" onclick={() => (turn = 0)} disabled={turn === 0}>⟲ {t('bou.resetView')}</button>
     <p class="hint">{t('bou.hint')}</p>
     {#if error}<p class="error" role="alert">{error}</p>{/if}
+    {#if welcome}<p class="welcome">{t('bou.welcome')}</p>{/if}
   </section>
 
   <section class="panel-side">
@@ -249,6 +253,7 @@
   .reset { justify-self: start; margin-top: 10px; border: 0; background: rgba(255, 255, 255, 0.7); border-radius: 12px; padding: 8px 12px; font: inherit; font-weight: 700; color: var(--ink-b); cursor: pointer; }
   .reset:disabled { opacity: 0.5; cursor: default; }
   .hint { margin: 6px 2px 0; font-size: 0.85rem; color: #7a6a4a; }
+  .welcome { position: absolute; top: 24px; left: 24px; right: 24px; margin: 0; padding: 10px 14px; border-radius: 16px; background: #fff; font-weight: 800; box-shadow: 0 3px 0 rgba(0, 0, 0, 0.1); text-align: center; }
   .error { margin: 6px 0 0; padding: 8px 12px; border-radius: 10px; background: #ffe1dc; color: #8a1f0e; }
 
   .panel-side { display: grid; grid-template-rows: auto 1fr; min-height: 0; padding: 14px 14px 0 0; gap: 10px; }

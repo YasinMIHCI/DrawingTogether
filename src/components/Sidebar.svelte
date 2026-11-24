@@ -9,6 +9,8 @@
   import { parseBouille } from '../bouille/model';
   import { renderBouille } from '../bouille/render';
 
+  const meHref = $derived(auth.profile ? `#/u/${auth.profile.username}` : href('account'));
+  const meOn = $derived(router.route === 'account' || router.route === 'bouille' || (router.route === 'u' && router.param === auth.profile?.username));
   const url = $derived(auth.profile?.avatar_url ?? settings.avatarUrl);
   const mine = $derived(!url && settings.bouille ? parseBouille(settings.bouille) : null);
 
@@ -16,7 +18,7 @@
   const items: { route: Route; label: Key; icon: string; badge?: () => number; also?: Route[] }[] = [
     { route: 'home', label: 'nav.home', icon: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z', also: ['draw', 'shared', 'games'] },
     { route: 'feed', label: 'nav.feed', icon: 'M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM8.5 10.5a1 1 0 1 0 0-.01M15.5 10.5a1 1 0 1 0 0-.01M8 14.5c2 2 6 2 8 0' },
-    { route: 'friends', label: 'nav.friends', icon: 'M8.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2 20c0-3.5 3-5.5 6.5-5.5S15 16.5 15 20M16 4.5a3.2 3.2 0 0 1 0 6.3M17.5 14.6c2.6.5 4.5 2.4 4.5 5.4', badge: () => social.requests, also: ['u'] },
+    { route: 'friends', label: 'nav.friends', icon: 'M8.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2 20c0-3.5 3-5.5 6.5-5.5S15 16.5 15 20M16 4.5a3.2 3.2 0 0 1 0 6.3M17.5 14.6c2.6.5 4.5 2.4 4.5 5.4', badge: () => social.requests, },
     { route: 'messages', label: 'nav.messages', icon: 'M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3.5 6.5 12 13l8.5-6.5', badge: () => social.unread },
     { route: 'gallery', label: 'nav.gallery', icon: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z' },
     { route: 'settings', label: 'nav.settings', icon: 'M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7 7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7 7 0 0 0 1.7-1l2.4 1 2-3.4z', also: ['pen-test'] },
@@ -30,7 +32,7 @@
 </script>
 
 <nav class="side" aria-label={t('nav.menu')}>
-  <a class="item me" class:on={router.route === 'account'} href={href('account')} aria-current={router.route === 'account' ? 'page' : undefined}>
+  <a class="item me" class:on={meOn} href={meHref} aria-current={meOn ? 'page' : undefined}>
     <span class="avatar-frame">{#if mine}<span class="bq">{@html renderBouille(mine, { view: 'head' })}</span>{:else}<Avatar id={settings.avatar} {url} size={40} />{/if}</span>
     <span class="label">{auth.profile ? t('nav.profile') : t('nav.signin')}</span>
   </a>

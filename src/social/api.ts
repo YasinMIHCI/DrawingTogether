@@ -198,7 +198,9 @@ export interface Post {
   id: string;
   owner_id: string;
   title: string;
-  image_path: string;
+  /** Texte de la publication (vide si dessin seul) */
+  body: string;
+  image_path: string | null;
   width: number;
   height: number;
   created_at: string;
@@ -208,26 +210,42 @@ export interface Post {
   comments: number;
 }
 
-/** Publie un dessin (visible par mes amis, et là où je le partage). */
-export async function createPost(png: Blob, width: number, height: number, title: string): Promise<string> {
+/** Publie un dessin et/ou un texte (visible par mes amis, et là où je le partage). */
+export async function createPost(png: Blob | null, width: number, height: number, title: string, body = ''): Promise<string> {
   const client = await sb();
   const id = crypto.randomUUID();
-  const path = `${me()}/${id}.png`;
-  const up = await client.storage.from('posts').upload(path, png, { contentType: 'image/png' });
-  if (up.error) throw new Error(up.error.message);
-  check(await client.from('posts').insert({ id, owner_id: me(), title: title.trim().slice(0, 80), image_path: path, width, height }));
+  let path: string | null = null;
+  if (png) {
+    path = `${me()}/${id}.png`;
+    const up = await client.storage.from('posts').upload(path, png, { contentType: 'image/png' });
+    if (up.error) throw new Error(up.error.message);
+  }
+  const row: Record<string, unknown> = { id, owner_id: me(), title: title.trim().slice(0, 80), image_path: path, width, height };
+  if (body.trim()) row.body = body.trim().slice(0, 1000);
+  check(await client.from('posts').insert(row));
   return id;
 }
 
-export async function feed(options: { owner?: string; ids?: string[]; limit?: number } = {}): Promise<Post[]> {
-  let q = (await sb())
-    .from('posts')
-    .select('id, owner_id, title, image_path, width, height, created_at, post_likes(user_id), post_comments(count)')
-    .order('created_at', { ascending: false })
-    .limit(options.limit ?? 30);
-  if (options.owner) q = q.eq('owner_id', options.owner);
-  if (options.ids) q = q.in('id', options.ids);
-  const rows = check(await q) as (Omit<Post, 'likes' | 'liked' | 'comments' | 'owner'> & {
+let hasBody = true;
+export async function feed(options: { owner?: string; ids?: string[]; limit?: number; before?: string } = {}): Promise<Post[]> {
+  const run = async (withBody: boolean) => {
+    let q = (await sb())
+      .from('posts')
+      .select(`id, owner_id, title, ${withBody ? 'body, ' : ''}image_path, width, height, created_at, post_likes(user_id), post_comments(count)`)
+      .order('created_at', { ascending: false })
+      .limit(options.limit ?? 30);
+    if (options.owner) q = q.eq('owner_id', options.owner);
+    if (options.ids) q = q.in('id', options.ids);
+    if (options.before) q = q.lt('created_at', options.before);
+    return q;
+  };
+  let r = await run(hasBody);
+  // Colonne « body » absente tant que social-2.sql n'est pas lancé
+  if (r.error && hasBody) {
+    hasBody = false;
+    r = await run(false);
+  }
+  const rows = (check(r) as unknown[]).map((x) => ({ body: '', ...(x as object) })) as (Omit<Post, 'likes' | 'liked' | 'comments' | 'owner'> & {
     post_likes: { user_id: string }[]; post_comments: { count: number }[];
   })[];
   const profiles = await profilesByIds(rows.map((r) => r.owner_id));
@@ -288,5 +306,28 @@ export async function deleteComment(id: number): Promise<void> {
 export async function deletePost(post: Post): Promise<void> {
   const client = await sb();
   check(await client.from('posts').delete().eq('id', post.id));
-  await client.storage.from('posts').remove([post.image_path]);
+  if (post.image_path) await client.storage.from('posts').remove([post.image_path]);
+}
+
+/** Publications aimées (« Ouais ! ») par quelqu'un, parmi celles que je peux voir. */
+export async function likedPosts(userId: string, limit = 30): Promise<Post[]> {
+  const rows = check(await (await sb()).from('post_likes').select('post_id').eq('user_id', userId).order('created_at', { ascending: false }).limit(limit)) as { post_id: string }[];
+  if (!rows.length) return [];
+  const posts = await feed({ ids: rows.map((r) => r.post_id), limit });
+  const order = new Map(rows.map((r, i) => [r.post_id, i]));
+  return posts.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+}
+
+export interface ProfileStats {
+  friends: number;
+  posts: number;
+  likes_given: number;
+}
+
+/** Compteurs d'une page profil (null si social-2.sql n'est pas installé). */
+export async function profileStats(userId: string): Promise<ProfileStats | null> {
+  const r = await (await sb()).rpc('profile_stats', { uid: userId });
+  if (r.error || !r.data?.[0]) return null;
+  const s = r.data[0] as Record<string, number | string>;
+  return { friends: Number(s.friends), posts: Number(s.posts), likes_given: Number(s.likes_given) };
 }

@@ -224,7 +224,7 @@
                   <span class="from">{people[m.sender_id]?.display_name || people[m.sender_id]?.username || ''}</span>
                 {/if}
                 {#if m.post_id}
-                  {#if posts[m.post_id]}<div class="shared"><PostCard post={posts[m.post_id]} /></div>{:else}<p class="bubble">{t('msg.drawing')}</p>{/if}
+                  {#if posts[m.post_id]}<div class="shared"><PostCard post={posts[m.post_id]} compact /></div>{:else}<p class="bubble">{t('msg.drawing')}</p>{/if}
                 {/if}
                 {#if m.body}<p class="bubble">{m.body}<time>{time(m.created_at)}</time></p>{/if}
               </div>
