@@ -184,7 +184,7 @@
   .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .tabs button { font: inherit; font-weight: 700; padding: 10px 6px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface-2); color: var(--ink-soft); cursor: pointer; }
   .tabs [aria-selected='true'] { background: var(--surface); color: var(--ink); border-color: var(--accent); }
-  .card { background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); display: grid; gap: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); display: grid; gap: 12px; }
   .field { display: grid; gap: 4px; }
   .field span, legend { font-weight: 600; font-size: 0.9rem; color: var(--ink-soft); }
   small { color: var(--ink-soft); font-size: 0.8rem; }

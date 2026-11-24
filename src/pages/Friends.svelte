@@ -8,6 +8,7 @@
   import { t } from '../lib/i18n/t.svelte';
   import Avatar from '../components/Avatar.svelte';
   import RequireAccount from '../ui/social/RequireAccount.svelte';
+  import EmptyState from '../components/EmptyState.svelte';
 
   let fs = $state<FriendState>({ friends: [], incoming: [], outgoing: [] });
   let query = $state('');
@@ -98,7 +99,7 @@
 
     <section class="card">
       <h2>{t('fr.list')}</h2>
-      {#if !fs.friends.length}<p class="muted">{t('fr.none')}</p>{/if}
+      {#if !fs.friends.length}<EmptyState text={t('fr.none')} expr="sad" seed={5} />{/if}
       <ul class="people">
         {#each fs.friends as p (p.id)}
           <li class="person">

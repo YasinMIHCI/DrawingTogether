@@ -13,6 +13,7 @@
   import RequireAccount from '../ui/social/RequireAccount.svelte';
   import PostCard from '../ui/social/PostCard.svelte';
   import ShareDialog from '../ui/social/ShareDialog.svelte';
+  import EmptyState from '../components/EmptyState.svelte';
 
   let convs = $state<ConversationSummary[]>([]);
   let error = $state<string | null>(null);
@@ -162,10 +163,9 @@
     {#if error}<p class="error">{error}</p>{/if}
     <div class="layout">
       <aside class="card list">
-        <div class="row" style="justify-content: space-between">
-          <h1>{t('msg.title')}</h1>
-          <button class="btn small" onclick={() => startPicking('new')}>＋ {t('msg.newGroup')}</button>
-        </div>
+        <h1 class="band small">{t('msg.title')}
+          <button class="newgroup" onclick={() => startPicking('new')}>＋ {t('msg.newGroup')}</button>
+        </h1>
         {#if !convs.length}<p class="muted">{t('msg.empty')}</p>{/if}
         <ul class="people">
           {#each convs as c (c.id)}
@@ -237,6 +237,8 @@
             <button class="btn primary" disabled={!draft.trim()}>{t('msg.send')}</button>
           </form>
         </section>
+      {:else}
+        <div class="placeholder"><EmptyState text={convs.length ? t('msg.pick') : t('msg.empty')} expr="happy" seed={11} /></div>
       {/if}
     </div>
   </RequireAccount>
@@ -268,12 +270,15 @@
   .wide { max-width: 1100px; }
   .layout { display: grid; grid-template-columns: 320px 1fr; gap: 14px; height: calc(100dvh - 60px); min-height: 420px; }
   .list { overflow: auto; align-content: start; }
+  .band.small { font-size: 1.05rem; min-height: 42px; padding: 6px 8px 6px 14px; margin: -4px -4px 4px; }
+  .newgroup { font: inherit; font-size: 0.78rem; font-weight: 800; padding: 5px 10px; border-radius: 10px; border: 0; background: rgba(255, 255, 255, 0.25); color: #fff; cursor: pointer; }
   .conv { text-decoration: none; }
   .conv.active { background: var(--surface-2); outline: 2px solid var(--accent); }
   .group-ico { width: 42px; height: 42px; border-radius: 50%; background: var(--surface-2); display: grid; place-items: center; font-size: 1.3rem; flex: none; }
   .thread { grid-template-rows: auto auto 1fr auto; min-height: 0; padding: 10px; }
   .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .back { display: none; }
+  .placeholder { align-self: center; }
   .info { border-bottom: 2px solid var(--line); padding-bottom: 10px; display: grid; gap: 8px; max-height: 40vh; overflow: auto; }
   .info h3 { font-size: 0.95rem; }
   .scroll { overflow: auto; min-height: 0; display: flex; flex-direction: column; gap: 4px; padding: 4px; }
@@ -295,5 +300,6 @@
     .layout { grid-template-columns: 1fr; height: calc(100dvh - 40px); }
     .thread-open .list { display: none; }
     .back { display: inline-flex; }
+    .placeholder { display: none; }
   }
 </style>

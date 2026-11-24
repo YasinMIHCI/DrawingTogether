@@ -5,6 +5,7 @@
   import RequireAccount from '../ui/social/RequireAccount.svelte';
   import PostCard from '../ui/social/PostCard.svelte';
   import ShareDialog from '../ui/social/ShareDialog.svelte';
+  import EmptyState from '../components/EmptyState.svelte';
 
   const PAGE = 20;
   let posts = $state<Post[] | null>(null);
@@ -35,7 +36,7 @@
   <h1 class="band">{t('feed.title')}</h1>
   <RequireAccount>
     {#if error}<p class="error">{error}</p>{/if}
-    {#if posts && !posts.length}<p class="muted">{t('feed.empty')}</p>{/if}
+    {#if posts && !posts.length}<EmptyState text={t('feed.empty')} />{/if}
     <div class="list">
       {#each posts ?? [] as p (p.id)}
         <PostCard post={p} ondelete={refresh} />

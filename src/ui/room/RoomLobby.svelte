@@ -159,7 +159,7 @@
 
 <style>
   .lobby { display: grid; gap: 14px; }
-  .card { background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
   .banner { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--sun); color: #1f2430; font-weight: 600; }
   .invite { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
   .label { margin: 0; color: var(--ink-soft); font-size: 0.85rem; }

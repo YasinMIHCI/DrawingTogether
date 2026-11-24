@@ -1,9 +1,9 @@
 import { auth } from './auth.svelte';
-import { friendState, myConversations, subscribeSocial, type Message } from './api';
+import { friendState, myConversations, subscribeSocial, unreadNotifications, type Message } from './api';
 import { play } from '../lib/sound';
 
 /** Compteurs du compte (badges) et événements en direct, actifs tant qu'on est connecté. */
-export const social = $state({ unread: 0, requests: 0 });
+export const social = $state({ unread: 0, requests: 0, notifications: 0 });
 
 const messageListeners = new Set<(m: Message) => void>();
 const friendListeners = new Set<() => void>();
@@ -19,12 +19,13 @@ export function onFriendsChange(fn: () => void): () => void {
 }
 
 /** Conversation affichée à l'écran (ses messages ne comptent pas comme non lus). */
-export const viewing = { conversation: null as string | null };
+export const viewing = { conversation: null as string | null, notifications: false };
 
 export async function refreshCounts(): Promise<void> {
   if (!auth.userId) return;
   try {
-    const [convs, friends] = await Promise.all([myConversations(), friendState()]);
+    const [convs, friends, notifs] = await Promise.all([myConversations(), friendState(), unreadNotifications()]);
+    social.notifications = notifs;
     social.unread = convs.reduce((n, c) => n + (c.id === viewing.conversation ? 0 : c.unread), 0);
     social.requests = friends.incoming.length;
   } catch {
@@ -43,6 +44,7 @@ export async function startSocial(): Promise<void> {
   current = auth.userId;
   social.unread = 0;
   social.requests = 0;
+  social.notifications = 0;
   if (!auth.userId) return;
   await refreshCounts();
   stop = await subscribeSocial(
@@ -56,6 +58,12 @@ export async function startSocial(): Promise<void> {
     () => {
       refreshCounts();
       for (const fn of friendListeners) fn();
+    },
+    () => {
+      if (!viewing.notifications) {
+        social.notifications++;
+        play('message');
+      }
     },
   );
 }

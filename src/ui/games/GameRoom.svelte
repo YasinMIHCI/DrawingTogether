@@ -66,5 +66,5 @@
 {/if}
 
 <style>
-  .card { background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); padding: 14px; text-align: center; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; text-align: center; }
 </style>

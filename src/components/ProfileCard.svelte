@@ -36,7 +36,7 @@
 
 <style>
   .bouille-link { display: block; text-align: center; margin-bottom: 14px; padding: 10px; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-weight: 800; text-decoration: none; }
-  .card { background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
   h2 { margin: 0 0 12px; font-size: 1.1rem; }
   .nick { display: grid; gap: 6px; margin-bottom: 16px; }
   .nick span, legend { font-weight: 600; font-size: 0.9rem; color: var(--ink-soft); }

@@ -10,6 +10,7 @@
   import { t } from '../lib/i18n/t.svelte';
   import { auth } from '../social/auth.svelte';
   import ShareDialog from '../ui/social/ShareDialog.svelte';
+  import EmptyState from '../components/EmptyState.svelte';
 
   let sharing = $state<string | null>(null);
   let shared = $state(false);
@@ -47,9 +48,9 @@
 </script>
 
 <main>
+  <h1 class="band">{t('gallery.title')}</h1>
   <header>
     <div>
-      <h1 class="band">{t('gallery.title')}</h1>
       <p class="muted">{t('gallery.intro')}</p>
     </div>
     <div class="actions">
@@ -59,7 +60,9 @@
   </header>
 
   {#if list && !list.length}
-    <p class="empty">{t('gallery.empty')}</p>
+    <EmptyState text={t('gallery.empty')} expr="happy">
+      <a class="btn primary" href="{href('draw')}/{newDrawingId()}">＋ {t('gallery.new')}</a>
+    </EmptyState>
   {:else if list}
     <ul class="grid">
       {#each list as d (d.id)}
@@ -102,9 +105,8 @@
   .actions { display: flex; flex-wrap: wrap; gap: 8px; }
   .btn { font: inherit; display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; cursor: pointer; }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
-  .empty { text-align: center; padding: 40px 0; color: var(--ink-soft); }
   .grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
-  .card { background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); padding: 10px; display: grid; gap: 6px; box-shadow: var(--shadow); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; display: grid; gap: 6px; box-shadow: var(--shadow); }
   .thumb { display: grid; place-items: center; aspect-ratio: 4 / 3; background: repeating-conic-gradient(#e7e2d8 0% 25%, #f6f2ea 0% 50%) 0 0 / 16px 16px; border-radius: 10px; overflow: hidden; }
   .thumb img { max-width: 100%; max-height: 100%; display: block; }
   .name { word-break: break-word; }

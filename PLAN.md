@@ -167,9 +167,9 @@ Choix : couleur principale verte vive (teinte propre au site), barre de navigati
 - ✅ **T9.4** Fil d'activité : avatar à gauche, carte-bulle (pseudo, « il y a 3 min », dessin/texte), « Ouais ! » + commentaires, bouton flottant « Publier ».
 - ✅ **T9.5** Publications texte ou petit dessin fait sur place (SQL : image facultative + texte).
 - ✅ **T9.6** Profil : en-tête (Bouille, nom, @pseudo, bio, amis), onglets Publications / Ouais.
-- **T9.7** Notifications (demandes d'ami, Ouais, commentaires, groupes) — table + déclencheurs SQL.
+- ✅ **T9.7** Notifications (demandes d'ami, Ouais, commentaires, groupes) — table + déclencheurs SQL.
 - **T9.8** Salons publics par thème : à la une, nouveaux, favoris ; signaler + modération.
-- **T9.9** Harmonisation des autres pages (les éditeurs de dessin ne changent pas).
+- ✅ **T9.9** Harmonisation des autres pages (les éditeurs de dessin ne changent pas).
 
 ### Phase 10 — Créateur de « Bouille » (personnage, buste ou corps entier)
 - ✅ **T10.1** Moteur SVG en couches : visage, teint, coiffure avant/arrière, sourcils, yeux, nez, bouche, oreilles, barbe, moustache, lunettes, joues/rides, corps + vêtement ; réglages taille/hauteur/écart/rotation/miroir ; Bouille = petit JSON.

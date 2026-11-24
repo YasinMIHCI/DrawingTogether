@@ -313,7 +313,7 @@
   .busy { padding: 40px 0; text-align: center; font-size: 1.1rem; color: var(--ink-soft); }
   .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
   @media (max-width: 700px) { .cols { grid-template-columns: minmax(0, 1fr); } }
-  .card { background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); display: grid; gap: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); display: grid; gap: 12px; }
   h2 { margin: 0; font-size: 1.1rem; }
   .field { display: grid; gap: 4px; }
   .field span, legend { font-size: 0.9rem; color: var(--ink-soft); font-weight: 600; }

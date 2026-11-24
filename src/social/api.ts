@@ -180,15 +180,20 @@ export async function markRead(conv: string): Promise<void> {
 }
 
 /** Nouveaux messages (de toutes mes discussions) et changements d'amitié, en direct. */
-export async function subscribeSocial(onMessage: (m: Message) => void, onFriends: () => void): Promise<() => void> {
+export async function subscribeSocial(onMessage: (m: Message) => void, onFriends: () => void, onNotify?: () => void): Promise<() => void> {
   const client = await sb();
   const ch: RealtimeChannel = client
     .channel(`social:${me()}`)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (p) => onMessage(p.new as Message))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships' }, () => onFriends())
     .subscribe();
+  // Canal à part : si la table des notifications n'existe pas encore, les messages restent en direct
+  const nc: RealtimeChannel | null = onNotify
+    ? client.channel(`notify:${me()}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${me()}` }, () => onNotify()).subscribe()
+    : null;
   return () => {
     client.removeChannel(ch);
+    if (nc) client.removeChannel(nc);
   };
 }
 
@@ -341,4 +346,38 @@ export async function profilesWithBouille(ids: string[]): Promise<ProfileWithBou
   if (!ids.length) return [];
   const r = await (await sb()).from('profiles').select(`${PROFILE_COLS}, bouille`).in('id', ids);
   return r.error ? [] : (r.data as ProfileWithBouille[]);
+}
+
+// ===================== Notifications =====================
+
+export type NotificationKind = 'friend_request' | 'friend_accept' | 'like' | 'comment' | 'group_add';
+export interface Notification {
+  id: number;
+  actor_id: string;
+  kind: NotificationKind;
+  post_id: string | null;
+  conversation_id: string | null;
+  read: boolean;
+  created_at: string;
+  actor?: PublicProfile;
+}
+
+export async function listNotifications(limit = 50): Promise<Notification[]> {
+  const rows = check(await (await sb()).from('notifications').select('*').order('created_at', { ascending: false }).limit(limit)) as Notification[];
+  const profiles = await profilesByIds(rows.map((r) => r.actor_id));
+  return rows.map((r) => ({ ...r, actor: profiles.get(r.actor_id) }));
+}
+
+/** Nombre de notifications non lues (0 si social-3.sql n'est pas installé). */
+export async function unreadNotifications(): Promise<number> {
+  const r = await (await sb()).from('notifications').select('id', { count: 'exact', head: true }).eq('read', false);
+  return r.error ? 0 : (r.count ?? 0);
+}
+
+export async function markNotificationsRead(): Promise<void> {
+  await (await sb()).from('notifications').update({ read: true }).eq('read', false).eq('user_id', me());
+}
+
+export async function clearNotifications(): Promise<void> {
+  await (await sb()).from('notifications').delete().eq('user_id', me());
 }
