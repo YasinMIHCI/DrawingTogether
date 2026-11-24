@@ -59,6 +59,11 @@
     <p class="hint">{t('settings.offline')}</p>
   </section>
 
+  <section>
+    <h2>{t('settings.penTest')}</h2>
+    <a href="#/pen-test">{t('settings.penTest')} →</a>
+  </section>
+
   <a href={href('home')}>← {t('nav.back')}</a>
 </main>
 

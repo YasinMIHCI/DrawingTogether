@@ -15,6 +15,7 @@
     games: () => import('./pages/Games.svelte'),
     gallery: () => import('./pages/Gallery.svelte'),
     settings: () => import('./pages/Settings.svelte'),
+    'pen-test': () => import('./pages/PenTest.svelte'),
   } as const;
   const loader = $derived(router.route === 'home' ? null : pages[router.route]());
 

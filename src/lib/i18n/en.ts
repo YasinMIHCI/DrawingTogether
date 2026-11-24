@@ -584,4 +584,12 @@ export const en: Dict = {
   'settings.motion.reduce': "Reduced",
   'settings.offline': "Free drawing and the gallery also work offline. On phones you can install the site as an app (“Add to Home screen”).",
   'offline.notice': "No connection: the shared canvas and games need the Internet. Free drawing works offline.",
+  'pen.title': "Test my stylus",
+  'pen.step1': "Draw a normal stroke in the box.",
+  'pen.step2': "Then hold the stylus button and draw another stroke (also try pressing the button while hovering without touching).",
+  'pen.step3': "Tap “Copy report” and send it to me.",
+  'pen.area': "Test area",
+  'pen.copy': "Copy report",
+  'pen.clear': "Clear",
+  'settings.penTest': "Test my stylus",
 };

@@ -582,4 +582,12 @@ export const fr = {
   'settings.motion.reduce': "Réduites",
   'settings.offline': "Le dessin libre et la galerie marchent aussi sans connexion. Sur téléphone, tu peux installer le site comme une appli (« Ajouter à l'écran d'accueil »).",
   'offline.notice': "Pas de connexion : la toile partagée et les jeux ont besoin d'Internet. Le dessin libre marche hors ligne.",
+  'pen.title': "Tester mon stylet",
+  'pen.step1': "Dessine un trait normal dans le cadre.",
+  'pen.step2': "Puis garde le bouton du stylet enfoncé et dessine un autre trait (essaie aussi d'appuyer sur le bouton en survolant l'écran sans le toucher).",
+  'pen.step3': "Touche « Copier le rapport » et envoie-le moi.",
+  'pen.area': "Zone de test",
+  'pen.copy': "Copier le rapport",
+  'pen.clear': "Effacer",
+  'settings.penTest': "Tester mon stylet",
 } as const;
